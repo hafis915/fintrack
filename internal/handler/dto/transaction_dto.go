@@ -36,3 +36,18 @@ type ListTransactionsResponse struct {
 	Page    int                   `json:"page"`
 	PerPage int                   `json:"per_page"`
 }
+
+type ReceiptScanAlternative struct {
+	CategoryName string  `json:"category_name"`
+	Confidence   float64 `json:"confidence"`
+}
+
+type ReceiptScanResponse struct {
+	Amount                int64                    `json:"amount"`
+	SuggestedCategoryID   string                   `json:"suggested_category_id,omitempty"`
+	SuggestedCategoryName string                   `json:"suggested_category_name"`
+	Note                  string                   `json:"note,omitempty"`
+	Confidence            float64                  `json:"confidence"`
+	ReceiptURL            string                   `json:"receipt_url,omitempty"`
+	Alternatives          []ReceiptScanAlternative `json:"alternatives,omitempty"`
+}

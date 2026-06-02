@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"io"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
+	"github.com/hafis915/fintrack/internal/ai"
 	"github.com/hafis915/fintrack/internal/domain/budget"
+	"github.com/hafis915/fintrack/internal/domain/category"
 	"github.com/hafis915/fintrack/internal/domain/fatigue"
 	"github.com/hafis915/fintrack/internal/domain/transaction"
 	"github.com/hafis915/fintrack/internal/handler/dto"
@@ -17,10 +20,14 @@ import (
 )
 
 type TransactionHandler struct {
-	Svc     transaction.Service
-	Budget  budget.Service
-	Fatigue fatigue.Service
+	Svc         transaction.Service
+	Budget      budget.Service
+	Fatigue     fatigue.Service
+	Categorizer *ai.Categorizer
+	Category    category.Service
 }
+
+const maxReceiptBytes = 5 << 20 // 5 MiB
 
 func (h *TransactionHandler) List(c echo.Context) error {
 	uid, err := uuid.Parse(c.Get("user_id").(string))
@@ -134,6 +141,64 @@ func (h *TransactionHandler) Update(c echo.Context) error {
 	return response.OK(c, toTxResponse(*tx))
 }
 
+// Scan accepts a multipart upload with field `image` and asks the AI for a
+// categorized transaction proposal. Does NOT persist the transaction — the
+// client should review and then POST /v1/transactions if accepted.
+func (h *TransactionHandler) Scan(c echo.Context) error {
+	if h.Categorizer == nil || h.Category == nil {
+		return apperror.AI("scan disabled (no AI key)", nil)
+	}
+	uid, err := uuid.Parse(c.Get("user_id").(string))
+	if err != nil {
+		return apperror.Unauthorized("bad user_id")
+	}
+
+	fh, err := c.FormFile("image")
+	if err != nil {
+		return apperror.Validation("missing file field 'image'", nil)
+	}
+	if fh.Size > maxReceiptBytes {
+		return apperror.Validation("image too large (max 5 MB)", nil)
+	}
+	mime := fh.Header.Get("Content-Type")
+	if mime != "image/jpeg" && mime != "image/png" && mime != "image/webp" {
+		return apperror.Validation("unsupported image type: "+mime, nil)
+	}
+	f, err := fh.Open()
+	if err != nil {
+		return apperror.Internal(err)
+	}
+	defer f.Close()
+	imgBytes, err := io.ReadAll(f)
+	if err != nil {
+		return apperror.Internal(err)
+	}
+
+	cats, err := h.Category.ListForUser(c.Request().Context(), uid)
+	if err != nil {
+		return err
+	}
+	aiCats := make([]ai.Category, 0, len(cats))
+	for _, cat := range cats {
+		aiCats = append(aiCats, ai.Category{ID: cat.ID, Name: cat.Name, Type: cat.Type})
+	}
+
+	scan, matchedID, err := h.Categorizer.Scan(c.Request().Context(), imgBytes, mime, aiCats)
+	if err != nil {
+		return apperror.AI("receipt scan failed", err)
+	}
+
+	return response.OK(c, dto.ReceiptScanResponse{
+		Amount:                  scan.Amount,
+		SuggestedCategoryID:     uuidStrOrEmpty(matchedID),
+		SuggestedCategoryName:   scan.CategoryName,
+		Note:                    scan.Note,
+		Confidence:              scan.Confidence,
+		ReceiptURL:              "",
+		Alternatives:            toAltResponses(scan.Alternatives),
+	})
+}
+
 func (h *TransactionHandler) Delete(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -144,6 +209,21 @@ func (h *TransactionHandler) Delete(c echo.Context) error {
 		return err
 	}
 	return c.NoContent(204)
+}
+
+func uuidStrOrEmpty(id uuid.UUID) string {
+	if id == uuid.Nil {
+		return ""
+	}
+	return id.String()
+}
+
+func toAltResponses(in []ai.ReceiptAlternative) []dto.ReceiptScanAlternative {
+	out := make([]dto.ReceiptScanAlternative, 0, len(in))
+	for _, a := range in {
+		out = append(out, dto.ReceiptScanAlternative{CategoryName: a.CategoryName, Confidence: a.Confidence})
+	}
+	return out
 }
 
 func toTxResponse(tx transaction.Transaction) dto.TransactionResponse {

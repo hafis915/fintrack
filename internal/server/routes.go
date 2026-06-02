@@ -27,6 +27,7 @@ func registerRoutes(e *echo.Echo, d Deps) {
 
 	v1.GET("/transactions", d.TransactionHandler.List)
 	v1.POST("/transactions", d.TransactionHandler.Create)
+	v1.POST("/transactions/scan", d.TransactionHandler.Scan)
 	v1.PATCH("/transactions/:id", d.TransactionHandler.Update)
 	v1.DELETE("/transactions/:id", d.TransactionHandler.Delete)
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hafis915/fintrack/internal/config"
 	"github.com/hafis915/fintrack/internal/database"
+	"github.com/hafis915/fintrack/internal/ai"
 	"github.com/hafis915/fintrack/internal/domain/budget"
 	"github.com/hafis915/fintrack/internal/domain/category"
 	"github.com/hafis915/fintrack/internal/domain/fatigue"
@@ -55,7 +56,15 @@ func main() {
 	txSvc := transaction.NewService(txRepo)
 
 	fatigueSvc := fatigue.NewService(budgetSvc, txSvc)
-	txH := &handler.TransactionHandler{Svc: txSvc, Budget: budgetSvc, Fatigue: fatigueSvc}
+	aiClient := ai.New(cfg.AIAPIKey, cfg.AIBaseURL, cfg.AIModel)
+	categorizer := ai.NewCategorizer(aiClient)
+	txH := &handler.TransactionHandler{
+		Svc:         txSvc,
+		Budget:      budgetSvc,
+		Fatigue:     fatigueSvc,
+		Categorizer: categorizer,
+		Category:    categorySvc,
+	}
 	fatigueH := &handler.FatigueHandler{Svc: fatigueSvc}
 
 	e := server.New(server.Deps{
