@@ -6,6 +6,10 @@ import (
 
 	"github.com/hafis915/fintrack/internal/config"
 	"github.com/hafis915/fintrack/internal/database"
+	"github.com/hafis915/fintrack/internal/domain/user"
+	"github.com/hafis915/fintrack/internal/encryption"
+	"github.com/hafis915/fintrack/internal/handler"
+	"github.com/hafis915/fintrack/internal/repository"
 	"github.com/hafis915/fintrack/internal/server"
 	"github.com/hafis915/fintrack/pkg/logger"
 )
@@ -25,7 +29,21 @@ func main() {
 	}
 	defer pool.Close()
 
-	e := server.New(server.Deps{Pool: pool, Version: version})
+	enc, err := encryption.New(cfg.IncomeEncryptionKey)
+	if err != nil {
+		panic(err)
+	}
+
+	userRepo := repository.NewUserRepo(pool)
+	userSvc := user.NewService(userRepo, enc)
+	profileH := &handler.ProfileHandler{Svc: userSvc}
+
+	e := server.New(server.Deps{
+		Cfg:            cfg,
+		Pool:           pool,
+		Version:        version,
+		ProfileHandler: profileH,
+	})
 	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	if err := e.Start(addr); err != nil {
 		panic(err)

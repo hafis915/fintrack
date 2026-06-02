@@ -8,6 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 
+	"github.com/hafis915/fintrack/internal/config"
+	"github.com/hafis915/fintrack/internal/handler"
 	"github.com/hafis915/fintrack/internal/middleware"
 	"github.com/hafis915/fintrack/pkg/apperror"
 	"github.com/hafis915/fintrack/pkg/response"
@@ -15,8 +17,10 @@ import (
 )
 
 type Deps struct {
-	Pool    *pgxpool.Pool
-	Version string
+	Cfg            *config.Config
+	Pool           *pgxpool.Pool
+	Version        string
+	ProfileHandler *handler.ProfileHandler
 }
 
 func New(deps Deps) *echo.Echo {
