@@ -29,4 +29,6 @@ func registerRoutes(e *echo.Echo, d Deps) {
 	v1.POST("/transactions", d.TransactionHandler.Create)
 	v1.PATCH("/transactions/:id", d.TransactionHandler.Update)
 	v1.DELETE("/transactions/:id", d.TransactionHandler.Delete)
+
+	v1.GET("/fatigue/dashboard", d.FatigueHandler.Dashboard)
 }

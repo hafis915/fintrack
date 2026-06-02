@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
+	"github.com/hafis915/fintrack/internal/domain/budget"
+	"github.com/hafis915/fintrack/internal/domain/fatigue"
 	"github.com/hafis915/fintrack/internal/domain/transaction"
 	"github.com/hafis915/fintrack/internal/handler/dto"
 	"github.com/hafis915/fintrack/pkg/apperror"
@@ -14,7 +16,11 @@ import (
 	v "github.com/hafis915/fintrack/pkg/validator"
 )
 
-type TransactionHandler struct{ Svc transaction.Service }
+type TransactionHandler struct {
+	Svc     transaction.Service
+	Budget  budget.Service
+	Fatigue fatigue.Service
+}
 
 func (h *TransactionHandler) List(c echo.Context) error {
 	uid, err := uuid.Parse(c.Get("user_id").(string))
@@ -77,11 +83,27 @@ func (h *TransactionHandler) Create(c echo.Context) error {
 	if req.Note != "" {
 		in.Note = &req.Note
 	}
+	// Attach to current budget plan if one exists for the transaction's period
+	if h.Budget != nil {
+		if plan, perr := h.Budget.GetCurrent(c.Request().Context(), uid, when.Year(), int(when.Month())); perr == nil && plan != nil {
+			planID := plan.Plan.ID
+			in.BudgetPlanID = &planID
+		}
+	}
 	tx, err := h.Svc.Create(c.Request().Context(), in)
 	if err != nil {
 		return err
 	}
-	return response.Created(c, toTxResponse(*tx))
+	resp := toTxResponse(*tx)
+	if h.Fatigue != nil {
+		if alert, _ := h.Fatigue.AlertForCategory(c.Request().Context(), uid, tx.CategoryID, time.Now()); alert != nil && alert.Status != "fresh" {
+			return response.Created(c, map[string]any{
+				"transaction":   resp,
+				"fatigue_alert": dto.FatigueAlertResponse{Status: alert.Status, CategoryName: alert.CategoryName, PercentageUsed: alert.PercentageUsed, Message: alert.Message},
+			})
+		}
+	}
+	return response.Created(c, resp)
 }
 
 func (h *TransactionHandler) Update(c echo.Context) error {

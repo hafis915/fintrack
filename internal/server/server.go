@@ -25,6 +25,7 @@ type Deps struct {
 	OnboardingHandler  *handler.OnboardingHandler
 	BudgetHandler      *handler.BudgetHandler
 	TransactionHandler *handler.TransactionHandler
+	FatigueHandler     *handler.FatigueHandler
 }
 
 func New(deps Deps) *echo.Echo {
