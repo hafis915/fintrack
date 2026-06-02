@@ -56,7 +56,7 @@ func main() {
 	txSvc := transaction.NewService(txRepo)
 
 	fatigueSvc := fatigue.NewService(budgetSvc, txSvc)
-	aiClient := ai.New(cfg.AIAPIKey, cfg.AIBaseURL, cfg.AIModel)
+	aiClient := ai.New(cfg.OpenRouterAPIKey, cfg.AIBaseURL, cfg.AIModel)
 	categorizer := ai.NewCategorizer(aiClient)
 	txH := &handler.TransactionHandler{
 		Svc:         txSvc,

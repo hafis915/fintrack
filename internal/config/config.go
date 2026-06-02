@@ -14,7 +14,7 @@ type Config struct {
 	SupabaseJWTSecret   string
 	SupabaseJWTAudience string
 	IncomeEncryptionKey string
-	AIAPIKey            string
+	OpenRouterAPIKey    string
 	AIBaseURL           string
 	AIModel             string
 	LogLevel            string
@@ -38,15 +38,15 @@ func Load() (*Config, error) {
 		SupabaseJWTSecret:   v.GetString("SUPABASE_JWT_SECRET"),
 		SupabaseJWTAudience: v.GetString("SUPABASE_JWT_AUDIENCE"),
 		IncomeEncryptionKey: v.GetString("INCOME_ENCRYPTION_KEY"),
-		AIAPIKey:            v.GetString("AI_API_KEY"),
+		OpenRouterAPIKey:    v.GetString("OPENROUTER_API_KEY"),
 		AIBaseURL:           v.GetString("AI_BASE_URL"),
 		AIModel:             v.GetString("AI_MODEL"),
 		LogLevel:            v.GetString("LOG_LEVEL"),
 	}
 
 	if cfg.DatabaseURL == "" || cfg.SupabaseJWTSecret == "" ||
-		cfg.IncomeEncryptionKey == "" || cfg.AIAPIKey == "" {
-		return nil, errors.New("missing required env: DATABASE_URL, SUPABASE_JWT_SECRET, INCOME_ENCRYPTION_KEY, AI_API_KEY")
+		cfg.IncomeEncryptionKey == "" || cfg.OpenRouterAPIKey == "" {
+		return nil, errors.New("missing required env: DATABASE_URL, SUPABASE_JWT_SECRET, INCOME_ENCRYPTION_KEY, OPENROUTER_API_KEY")
 	}
 	return cfg, nil
 }
