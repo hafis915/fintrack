@@ -184,7 +184,7 @@ func (c *Client) do(ctx context.Context, url string, body []byte) (string, bool,
 	if len(out.Choices) == 0 {
 		return "", false, errors.New("ai: empty choices")
 	}
-	return out.Choices[0].Message.Content, nil
+	return out.Choices[0].Message.Content, false, nil
 }
 
 func truncate(s string, n int) string {
