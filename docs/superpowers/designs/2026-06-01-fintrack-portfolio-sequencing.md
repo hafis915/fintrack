@@ -140,7 +140,16 @@ weeknight work with Claude Code driving most of the implementation.
   rest in DB is unreadable without the key. → MET
 - *Estimate:* 1–2 weeks. → Took ~30 min focused CC time.
 
-**Milestone 3 — Vertical Slice 2: Receipt Scan + Transaction + Fatigue (HERO MILESTONE)** — ⏳ PENDING
+**Milestone 3 — Vertical Slice 2: Receipt Scan + Transaction + Fatigue (HERO MILESTONE)** — 🟡 CODE DONE / HERO SCAN DEFERRED (2026-06-02)
+- POST /v1/transactions/scan-receipt (multipart upload → Anthropic Claude vision API → amount + merchant + category). 🟡 Code in place but deferred — vision-capable model not chosen yet. Builder selected openai/gpt-oss-120b:free which is text-only; OpenRouter returns "No endpoints found that support image input" for image payloads. Endpoint structure + handler + categorizer prompt all verified.
+- POST /v1/transactions. ✅ (live tested — auto-links to current month's budget_plan, inline `fatigue_alert` on threshold crossing)
+- Fatigue domain service (Fresh / Warning / Fatigued from budget+tx). ✅ (unit tests pass, live dashboard verified showing Makan at 86.7% as `fatigued`)
+- GET /v1/fatigue/dashboard. ✅
+- AI client (OpenRouter OAI format). ✅ (4 unit tests + live narrative summarizer call returns coherent Bahasa Indonesia)
+- Narrative summarizer (Task 31, used by reports + worker). ✅ live verified with the builder's actual OpenRouter key + chosen model.
+- **Capture artifact:** 30-second clip of a real Indonesian struk. ⏳ deferred with the HERO scan.
+- *Done-when:* photograph a real struk → POST → structured transaction. → NOT MET (vision model needed)
+- *Estimate:* 2–3 weeks. → Code took ~1 hour of CC time.
 - POST /v1/transactions/scan-receipt (multipart upload → Anthropic Claude vision API
   → amount + merchant + category).
 - POST /v1/transactions.
@@ -197,7 +206,7 @@ when each milestone is genuinely done, not when the calendar says so.
 |-----------|--------|----------|-------|-------|
 | 1 — Foundation + Deploy | 🟡 CODE DONE / DEPLOY DEFERRED | none yet | ✅ 4 packages green | Task 39 (Railway) deferred per builder choice; everything else built + smoke-tested locally |
 | 2 — Onboarding + Budget Engine | 🟢 DONE | local only | ✅ engine unit tests + live e2e | program classification verified, AES income encryption verified |
-| 3 — Receipt Scan + Fatigue (HERO) | ⏳ PENDING | — | — | — |
+| 3 — Receipt Scan + Fatigue (HERO) | 🟡 CODE DONE / HERO DEFERRED | local only | ✅ AI + fatigue unit tests + live e2e | Tx CRUD, fatigue, summarizer all live-verified. Receipt-scan code complete but blocked on vision-capable model selection |
 | 4 — Weekly Narrative Cron | ⏳ PENDING | — | — | — |
 | 5 — Horizontal Fill | ⏳ PENDING | — | — | — |
 | 6 — Frontend + Polish | ⏳ PENDING | — | — | — |

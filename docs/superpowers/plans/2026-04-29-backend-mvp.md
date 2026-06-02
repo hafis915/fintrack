@@ -34,11 +34,11 @@ Legend: ✅ done · 🟡 partial · ⏳ pending · ⏭️ deferred (postponed by
 | 6 | 24 | Category entity + repo + queries | ✅ | `2f807ec` |
 | 7 | 25 | Budget engine (pure logic) | ✅ | `b2b4d81` — 4 unit tests all pass |
 | 7 | 26 | Budget repo + service + onboarding handler | ✅ | `02ace70` — full onboarding flow verified live |
-| 8 | 27 | Transactions CRUD | ⏳ | — |
-| 9 | 28 | Fatigue calculator + handler | ⏳ | — |
-| 10 | 29 | Anthropic HTTP client | ⏳ | — |
-| 10 | 30 | Receipt categorizer (HERO) | ⏳ | — |
-| 10 | 31 | Narrative summarizer | ⏳ | — |
+| 8 | 27 | Transactions CRUD | ✅ | `9d1cff1` — live verified (POST/GET with pagination, auto-links to current budget plan) |
+| 9 | 28 | Fatigue calculator + handler | ✅ | `0644d2b` — live verified (Fresh/Warning/Fatigued thresholds, inline alert on tx create, dashboard endpoint) |
+| 10 | 29 | AI HTTP client (OpenRouter OAI) | ✅ | `efd9df3`, `6c64390` — 4 unit tests + live summarizer call confirmed |
+| 10 | 30 | Receipt categorizer (HERO) | 🟡 | `79d3175` — code complete, wired; HERO scan deferred because gpt-oss-120b is text-only. Switch AI_MODEL to a vision-capable model when ready |
+| 10 | 31 | Narrative summarizer | ✅ | `f7cdb3b` — live verified with openai/gpt-oss-120b:free, returns coherent Bahasa Indonesia 3-sentence narrative |
 | 11 | 32 | Debts domain | ⏳ | — |
 | 12 | 33 | Goals CRUD | ⏳ | — |
 | 13 | 34 | Reports domain | ⏳ | — |
@@ -51,7 +51,7 @@ Legend: ✅ done · 🟡 partial · ⏳ pending · ⏭️ deferred (postponed by
 | 17 | 41 | Frontend scaffold + 5 hero pages + Vercel | ⏳ | — |
 | 18 | 43–46 | Portfolio README + Loom + final verify | ⏳ | — |
 
-**Milestones (per design doc):** Milestone 1 = 🟡 code done / deploy deferred · Milestone 2 = 🟢 done · Milestones 3–6 = ⏳ pending.
+**Milestones (per design doc):** Milestone 1 = 🟡 code done / deploy deferred · Milestone 2 = 🟢 done · Milestone 3 = 🟡 code done, HERO scan deferred (text-only model selected) · Milestones 4–6 = ⏳ pending.
 
 **Verified locally (end-to-end on `localhost:8090`):** `/health` returns `{db: ok}`, JWT-gated `/v1/*` routes work, AES income encryption round-trips, onboarding generates per-program budget, GET /v1/budget/current reads back the plan, GET /v1/profile shows the upserted profile.
 
