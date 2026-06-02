@@ -21,4 +21,7 @@ func registerRoutes(e *echo.Echo, d Deps) {
 	v1.GET("/categories", d.CategoryHandler.List)
 	v1.POST("/categories", d.CategoryHandler.Create)
 	v1.DELETE("/categories/:id", d.CategoryHandler.Delete)
+
+	v1.POST("/onboarding", d.OnboardingHandler.Submit)
+	v1.GET("/budget/current", d.BudgetHandler.Current)
 }

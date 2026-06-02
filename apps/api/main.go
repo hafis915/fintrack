@@ -6,6 +6,7 @@ import (
 
 	"github.com/hafis915/fintrack/internal/config"
 	"github.com/hafis915/fintrack/internal/database"
+	"github.com/hafis915/fintrack/internal/domain/budget"
 	"github.com/hafis915/fintrack/internal/domain/category"
 	"github.com/hafis915/fintrack/internal/domain/user"
 	"github.com/hafis915/fintrack/internal/encryption"
@@ -43,12 +44,19 @@ func main() {
 	categorySvc := category.NewService(categoryRepo)
 	categoryH := &handler.CategoryHandler{Svc: categorySvc}
 
+	budgetRepo := repository.NewBudgetRepo(pool)
+	budgetSvc := budget.NewService(budgetRepo, userSvc, userRepo)
+	onboardingH := &handler.OnboardingHandler{Svc: budgetSvc}
+	budgetH := &handler.BudgetHandler{Svc: budgetSvc}
+
 	e := server.New(server.Deps{
-		Cfg:             cfg,
-		Pool:            pool,
-		Version:         version,
-		ProfileHandler:  profileH,
-		CategoryHandler: categoryH,
+		Cfg:               cfg,
+		Pool:              pool,
+		Version:           version,
+		ProfileHandler:    profileH,
+		CategoryHandler:   categoryH,
+		OnboardingHandler: onboardingH,
+		BudgetHandler:     budgetH,
 	})
 	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	if err := e.Start(addr); err != nil {
