@@ -17,4 +17,8 @@ func registerRoutes(e *echo.Echo, d Deps) {
 	v1.GET("/profile", d.ProfileHandler.Get)
 	v1.PATCH("/profile", d.ProfileHandler.Update)
 	v1.PUT("/profile/income", d.ProfileHandler.UpdateIncome)
+
+	v1.GET("/categories", d.CategoryHandler.List)
+	v1.POST("/categories", d.CategoryHandler.Create)
+	v1.DELETE("/categories/:id", d.CategoryHandler.Delete)
 }

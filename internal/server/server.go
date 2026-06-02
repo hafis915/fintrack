@@ -17,10 +17,11 @@ import (
 )
 
 type Deps struct {
-	Cfg            *config.Config
-	Pool           *pgxpool.Pool
-	Version        string
-	ProfileHandler *handler.ProfileHandler
+	Cfg             *config.Config
+	Pool            *pgxpool.Pool
+	Version         string
+	ProfileHandler  *handler.ProfileHandler
+	CategoryHandler *handler.CategoryHandler
 }
 
 func New(deps Deps) *echo.Echo {
