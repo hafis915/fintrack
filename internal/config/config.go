@@ -14,8 +14,9 @@ type Config struct {
 	SupabaseJWTSecret   string
 	SupabaseJWTAudience string
 	IncomeEncryptionKey string
-	AnthropicAPIKey     string
-	AnthropicModel      string
+	AIAPIKey            string
+	AIBaseURL           string
+	AIModel             string
 	LogLevel            string
 }
 
@@ -26,7 +27,8 @@ func Load() (*Config, error) {
 	v.SetDefault("APP_ENV", "development")
 	v.SetDefault("HTTP_PORT", 8080)
 	v.SetDefault("SUPABASE_JWT_AUDIENCE", "authenticated")
-	v.SetDefault("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+	v.SetDefault("AI_BASE_URL", "https://openrouter.ai/api/v1")
+	v.SetDefault("AI_MODEL", "anthropic/claude-haiku-4.5")
 	v.SetDefault("LOG_LEVEL", "info")
 
 	cfg := &Config{
@@ -36,14 +38,15 @@ func Load() (*Config, error) {
 		SupabaseJWTSecret:   v.GetString("SUPABASE_JWT_SECRET"),
 		SupabaseJWTAudience: v.GetString("SUPABASE_JWT_AUDIENCE"),
 		IncomeEncryptionKey: v.GetString("INCOME_ENCRYPTION_KEY"),
-		AnthropicAPIKey:     v.GetString("ANTHROPIC_API_KEY"),
-		AnthropicModel:      v.GetString("ANTHROPIC_MODEL"),
+		AIAPIKey:            v.GetString("AI_API_KEY"),
+		AIBaseURL:           v.GetString("AI_BASE_URL"),
+		AIModel:             v.GetString("AI_MODEL"),
 		LogLevel:            v.GetString("LOG_LEVEL"),
 	}
 
 	if cfg.DatabaseURL == "" || cfg.SupabaseJWTSecret == "" ||
-		cfg.IncomeEncryptionKey == "" || cfg.AnthropicAPIKey == "" {
-		return nil, errors.New("missing required env: DATABASE_URL, SUPABASE_JWT_SECRET, INCOME_ENCRYPTION_KEY, ANTHROPIC_API_KEY")
+		cfg.IncomeEncryptionKey == "" || cfg.AIAPIKey == "" {
+		return nil, errors.New("missing required env: DATABASE_URL, SUPABASE_JWT_SECRET, INCOME_ENCRYPTION_KEY, AI_API_KEY")
 	}
 	return cfg, nil
 }

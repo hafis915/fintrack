@@ -14,7 +14,7 @@ func TestLoad_FromEnv(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://x")
 	t.Setenv("SUPABASE_JWT_SECRET", "s")
 	t.Setenv("INCOME_ENCRYPTION_KEY", "k")
-	t.Setenv("ANTHROPIC_API_KEY", "a")
+	t.Setenv("AI_API_KEY", "a")
 
 	cfg, err := config.Load()
 	require.NoError(t, err)
