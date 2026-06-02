@@ -4,6 +4,7 @@ go 1.25.7
 
 require (
 	github.com/go-playground/validator/v10 v10.30.3
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/labstack/echo/v4 v4.15.2
 	github.com/rs/zerolog v1.35.1
@@ -41,5 +42,6 @@ require (
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
