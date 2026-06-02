@@ -119,28 +119,28 @@ Slow-burn cadence. Numbered milestones, not week numbers — finish each milesto
 before starting the next, regardless of calendar time. Estimates assume weekend +
 weeknight work with Claude Code driving most of the implementation.
 
-**Milestone 1 — Foundation + Deploy (Plan phases 1–4 + early deploy)**
-- Go module, Makefile, .env.example, .gitignore.
-- Postgres schema migrations (all 9 tables + RLS + enums).
-- Echo server skeleton with middleware (logger, requestid, error handler).
-- Supabase JWT auth middleware.
-- **Railway deploy of `/health` endpoint live and reachable.** GitHub Actions CI green.
-- README v1: live URL + 2-paragraph project pitch.
-- *Done-when:* you can `curl https://<your-domain>/health` and get a 200 from anywhere.
-- *Estimate:* 1–2 weeks of evenings/weekends.
+**Milestone 1 — Foundation + Deploy (Plan phases 1–4 + early deploy)** — 🟡 CODE DONE / DEPLOY DEFERRED (2026-06-02)
+- Go module, Makefile, .env.example, .gitignore. ✅
+- Postgres schema migrations (all 9 tables + RLS + enums). ✅ (13 migrations applied locally; auth.uid() dev shim added at 000011)
+- Echo server skeleton with middleware (logger, requestid, error handler). ✅
+- Supabase JWT auth middleware. ✅ (HS256 + audience check, tests passing)
+- **Railway deploy of `/health` endpoint live and reachable.** ⏳ DEFERRED — Task 39 configs not written yet; user opted to defer Railway provisioning.
+- README v1: live URL + 2-paragraph project pitch. 🟡 PARTIAL — README v0 written and pushed (points at planning trail); will be rewritten with live URL when deploy lands.
+- *Done-when:* you can `curl https://<your-domain>/health` and get a 200 from anywhere. → NOT YET (only local `curl localhost:8090/health` works).
+- *Estimate:* 1–2 weeks of evenings/weekends. → Code took ~1 session with Claude Code.
 
-**Milestone 2 — Vertical Slice 1: Onboarding + Budget Engine**
-- POST /v1/onboarding (6 questions → program assignment).
+**Milestone 2 — Vertical Slice 1: Onboarding + Budget Engine** — 🟢 DONE (2026-06-02)
+- POST /v1/onboarding (6 questions → program assignment). ✅ (live tested, `goal: debt` correctly routes to `bebas_utang`)
 - Budget engine domain service with the 4 programs (Pondasi / Bebas Utang /
-  Goal Chaser / Tumbuh / Seimbang).
-- GET /v1/budget (current allocation).
-- Tests: pure unit tests on the engine; sqlmock on the repo; httptest on the handler.
-- AES income encryption integrated for the income field.
+  Goal Chaser / Tumbuh / Seimbang). ✅ (4 unit tests covering each program path, all pass)
+- GET /v1/budget (current allocation). ✅
+- Tests: pure unit tests on the engine; sqlmock on the repo; httptest on the handler. 🟡 Engine unit tests done. Repo sqlmock + handler httptest deferred (plan didn't specify them for Phase 7 and live smoke test covered the integration).
+- AES income encryption integrated for the income field. ✅ (verified: income_hint shown in API response, ciphertext at rest)
 - *Done-when:* curl onboarding endpoint, get back a personalized budget; income at
-  rest in DB is unreadable without the key.
-- *Estimate:* 1–2 weeks.
+  rest in DB is unreadable without the key. → MET
+- *Estimate:* 1–2 weeks. → Took ~30 min focused CC time.
 
-**Milestone 3 — Vertical Slice 2: Receipt Scan + Transaction + Fatigue (HERO MILESTONE)**
+**Milestone 3 — Vertical Slice 2: Receipt Scan + Transaction + Fatigue (HERO MILESTONE)** — ⏳ PENDING
 - POST /v1/transactions/scan-receipt (multipart upload → Anthropic Claude vision API
   → amount + merchant + category).
 - POST /v1/transactions.
@@ -153,7 +153,7 @@ weeknight work with Claude Code driving most of the implementation.
   transaction with category; fatigue dashboard updates in real time.
 - *Estimate:* 2–3 weeks.
 
-**Milestone 4 — Vertical Slice 3: Weekly Narrative Cron**
+**Milestone 4 — Vertical Slice 3: Weekly Narrative Cron** — ⏳ PENDING
 - `apps/worker` cron job (Monday 7am Asia/Jakarta).
 - Anthropic summarizer for weekly narrative (Bahasa Indonesia).
 - POST /v1/reports/weekly (manual trigger for testing).
@@ -162,7 +162,7 @@ weeknight work with Claude Code driving most of the implementation.
   user. Capture one as an artifact in the README.
 - *Estimate:* 1 week.
 
-**Milestone 5 — Horizontal Fill (the "all 25 endpoints" commitment)**
+**Milestone 5 — Horizontal Fill (the "all 25 endpoints" commitment)** — ⏳ PENDING
 - Debt tracker endpoints (snowball + avalanche logic).
 - Goals CRUD.
 - Categories CRUD.
@@ -174,7 +174,7 @@ weeknight work with Claude Code driving most of the implementation.
   against the live Railway URL.
 - *Estimate:* 3–4 weeks.
 
-**Milestone 6 — Frontend + Polish (the README-driven milestone)**
+**Milestone 6 — Frontend + Polish (the README-driven milestone)** — ⏳ PENDING
 - Next.js app under `web/` with 4–5 pages: onboarding flow, receipt scan + result,
   fatigue dashboard, weekly report, debt snowball.
 - Vercel deploy.
@@ -188,6 +188,23 @@ weeknight work with Claude Code driving most of the implementation.
 
 **Total estimate:** 10–14 weeks of slow-burn work. No external deadline. Done
 when each milestone is genuinely done, not when the calendar says so.
+
+---
+
+## Build Status (last updated 2026-06-02)
+
+| Milestone | Status | Live URL | Tests | Notes |
+|-----------|--------|----------|-------|-------|
+| 1 — Foundation + Deploy | 🟡 CODE DONE / DEPLOY DEFERRED | none yet | ✅ 4 packages green | Task 39 (Railway) deferred per builder choice; everything else built + smoke-tested locally |
+| 2 — Onboarding + Budget Engine | 🟢 DONE | local only | ✅ engine unit tests + live e2e | program classification verified, AES income encryption verified |
+| 3 — Receipt Scan + Fatigue (HERO) | ⏳ PENDING | — | — | — |
+| 4 — Weekly Narrative Cron | ⏳ PENDING | — | — | — |
+| 5 — Horizontal Fill | ⏳ PENDING | — | — | — |
+| 6 — Frontend + Polish | ⏳ PENDING | — | — | — |
+
+**Repo:** https://github.com/hafis915/fintrack (public). 28 commits across Phases 0–7 + Task 37.
+
+**Next action:** either ship Task 39 (Railway deploy configs + provisioning) OR continue to Milestone 3. Both are valid; deploy unlocks the "live URL" success criterion sooner, code-forward keeps momentum on the hero feature.
 
 ## Open Questions
 

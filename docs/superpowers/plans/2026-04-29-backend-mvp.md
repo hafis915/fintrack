@@ -1,5 +1,62 @@
 # Fintrack Backend MVP Implementation Plan
 
+## Build Status (last updated 2026-06-02)
+
+Legend: ✅ done · 🟡 partial · ⏳ pending · ⏭️ deferred (postponed by choice)
+
+| Phase | Task | Title | Status | Commit / Notes |
+|-------|------|-------|--------|----------------|
+| 0 | 0  | Git init + planning artifacts + GitHub push | ✅ | `c70062e`, `2c9aef3` — repo live at hafis915/fintrack |
+| 1 | 1  | Project skeleton | ✅ | `8fc690c` |
+| 1 | 2  | Config loader (viper) | ✅ | `4b4733d` |
+| 1 | 3  | Logger (zerolog) | ✅ | `a4be019` |
+| 1 | 4  | AppError package | ✅ | `0fdcb5a` |
+| 1 | 5  | Response envelope | ✅ | `d26a98a` |
+| 1 | 6  | Validator wrapper | ✅ | `f05e99b` |
+| 2 | —  | Docker Compose for local Postgres (pre-step) | ✅ | `ae655c0` — port 5433 to avoid host conflict |
+| 2 | 7  | Migration 0001 (extensions + enums) | ✅ | `c1e1ba2` |
+| 2 | 8  | Migrations 0002–0003 (user_profiles, expense_categories) | ✅ | `2afd5bc` |
+| 2 | 9  | Migrations 0004–0005 (budget_plans, budget_items) | ✅ | `71bd80a` |
+| 2 | 10 | Migration 0006 (transactions) | ✅ | `6a2f97b` |
+| 2 | 11 | Migration 0007 (debt_items) | ✅ | `59370ae` |
+| 2 | 12 | Migration 0008 (goals) | ✅ | `e4ec9c8` |
+| 2 | 13 | Migrations 0009–0010 (weekly_reports, api_tokens) | ✅ | `4275f45` |
+| 2 | 14 | RLS + seed + dev auth shim | ✅ | `5d471bd` — added 000011_dev_auth_shim before RLS (shifted plan's 0011→0012, 0012→0013) |
+| 2 | 15 | sqlc setup + first user queries | ✅ | `3dceedd` |
+| 2 | 16 | pgx connection pool | ✅ | `ec82a92` |
+| 3 | 17 | Echo bootstrap + middleware + stub /health | ✅ | `7099c6b` |
+| 4 | 18 | AES-256-GCM income encryption | ✅ | `b219dff` |
+| 4 | 19 | JWT auth middleware (Supabase HS256) | ✅ | `6b04791` |
+| 5 | 20 | User domain entity + repo interface | ✅ | `99077b5` |
+| 5 | 21 | User service | ✅ | `9664f9a` (+ `cb09f82` followup for objx dep) |
+| 5 | 22 | User repository (sqlc-backed) | ✅ | `b275bfb` — repo absorbs pgtype↔domain conversions |
+| 5 | 23 | Profile handler + DTO + wiring | ✅ | `62a5c5d` |
+| 6 | 24 | Category entity + repo + queries | ✅ | `2f807ec` |
+| 7 | 25 | Budget engine (pure logic) | ✅ | `b2b4d81` — 4 unit tests all pass |
+| 7 | 26 | Budget repo + service + onboarding handler | ✅ | `02ace70` — full onboarding flow verified live |
+| 8 | 27 | Transactions CRUD | ⏳ | — |
+| 9 | 28 | Fatigue calculator + handler | ⏳ | — |
+| 10 | 29 | Anthropic HTTP client | ⏳ | — |
+| 10 | 30 | Receipt categorizer (HERO) | ⏳ | — |
+| 10 | 31 | Narrative summarizer | ⏳ | — |
+| 11 | 32 | Debts domain | ⏳ | — |
+| 12 | 33 | Goals CRUD | ⏳ | — |
+| 13 | 34 | Reports domain | ⏳ | — |
+| 14 | 35 | API Tokens (BYOA) | ⏳ | — |
+| 15 | 36 | Worker (weekly cron) | ⏳ | — |
+| 16 | 37 | Real /health with DB Ping | ✅ | `3f1cd06` |
+| 16 | 38 | Rate limiting middleware | ⏳ | — |
+| 16 | 39 | Railway deploy config (Dockerfile + railway.toml + PORT fix) | ⏭️ DEFERRED | Per builder choice 2026-06-02 — Configs unwritten. Needs: Go 1.25-alpine in Dockerfile, PORT fallback in config.go, Railway provisioning |
+| 16 | 40 | End-to-end smoke script | ⏳ | — |
+| 17 | 41 | Frontend scaffold + 5 hero pages + Vercel | ⏳ | — |
+| 18 | 43–46 | Portfolio README + Loom + final verify | ⏳ | — |
+
+**Milestones (per design doc):** Milestone 1 = 🟡 code done / deploy deferred · Milestone 2 = 🟢 done · Milestones 3–6 = ⏳ pending.
+
+**Verified locally (end-to-end on `localhost:8090`):** `/health` returns `{db: ok}`, JWT-gated `/v1/*` routes work, AES income encryption round-trips, onboarding generates per-program budget, GET /v1/budget/current reads back the plan, GET /v1/profile shows the upserted profile.
+
+---
+
 > **Execution order override (2026-06-01):** This plan file is the detailed
 > reference but is NOT the execution order. The current execution order is
 > defined in `docs/superpowers/designs/2026-06-01-fintrack-portfolio-sequencing.md`
