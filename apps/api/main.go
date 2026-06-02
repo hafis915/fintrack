@@ -10,6 +10,8 @@ import (
 	"github.com/hafis915/fintrack/pkg/logger"
 )
 
+const version = "0.1.0"
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -23,7 +25,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	e := server.New(server.Deps{})
+	e := server.New(server.Deps{Pool: pool, Version: version})
 	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	if err := e.Start(addr); err != nil {
 		panic(err)

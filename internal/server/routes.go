@@ -1,11 +1,12 @@
 package server
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/labstack/echo/v4"
 
-func registerRoutes(e *echo.Echo, _ Deps) {
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(200, map[string]any{
-			"data": map[string]string{"status": "ok", "version": "0.1.0", "db": "ok"},
-		})
-	})
+	"github.com/hafis915/fintrack/internal/handler"
+)
+
+func registerRoutes(e *echo.Echo, deps Deps) {
+	health := &handler.HealthHandler{Pool: deps.Pool, Version: deps.Version}
+	e.GET("/health", health.Get)
 }

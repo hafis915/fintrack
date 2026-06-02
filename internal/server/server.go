@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 
@@ -14,7 +15,8 @@ import (
 )
 
 type Deps struct {
-	// filled in later phases
+	Pool    *pgxpool.Pool
+	Version string
 }
 
 func New(deps Deps) *echo.Echo {
