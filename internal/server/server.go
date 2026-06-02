@@ -17,13 +17,14 @@ import (
 )
 
 type Deps struct {
-	Cfg               *config.Config
-	Pool              *pgxpool.Pool
-	Version           string
-	ProfileHandler    *handler.ProfileHandler
-	CategoryHandler   *handler.CategoryHandler
-	OnboardingHandler *handler.OnboardingHandler
-	BudgetHandler     *handler.BudgetHandler
+	Cfg                *config.Config
+	Pool               *pgxpool.Pool
+	Version            string
+	ProfileHandler     *handler.ProfileHandler
+	CategoryHandler    *handler.CategoryHandler
+	OnboardingHandler  *handler.OnboardingHandler
+	BudgetHandler      *handler.BudgetHandler
+	TransactionHandler *handler.TransactionHandler
 }
 
 func New(deps Deps) *echo.Echo {

@@ -24,4 +24,9 @@ func registerRoutes(e *echo.Echo, d Deps) {
 
 	v1.POST("/onboarding", d.OnboardingHandler.Submit)
 	v1.GET("/budget/current", d.BudgetHandler.Current)
+
+	v1.GET("/transactions", d.TransactionHandler.List)
+	v1.POST("/transactions", d.TransactionHandler.Create)
+	v1.PATCH("/transactions/:id", d.TransactionHandler.Update)
+	v1.DELETE("/transactions/:id", d.TransactionHandler.Delete)
 }

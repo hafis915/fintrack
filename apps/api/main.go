@@ -8,6 +8,7 @@ import (
 	"github.com/hafis915/fintrack/internal/database"
 	"github.com/hafis915/fintrack/internal/domain/budget"
 	"github.com/hafis915/fintrack/internal/domain/category"
+	"github.com/hafis915/fintrack/internal/domain/transaction"
 	"github.com/hafis915/fintrack/internal/domain/user"
 	"github.com/hafis915/fintrack/internal/encryption"
 	"github.com/hafis915/fintrack/internal/handler"
@@ -49,14 +50,19 @@ func main() {
 	onboardingH := &handler.OnboardingHandler{Svc: budgetSvc}
 	budgetH := &handler.BudgetHandler{Svc: budgetSvc}
 
+	txRepo := repository.NewTransactionRepo(pool)
+	txSvc := transaction.NewService(txRepo)
+	txH := &handler.TransactionHandler{Svc: txSvc}
+
 	e := server.New(server.Deps{
-		Cfg:               cfg,
-		Pool:              pool,
-		Version:           version,
-		ProfileHandler:    profileH,
-		CategoryHandler:   categoryH,
-		OnboardingHandler: onboardingH,
-		BudgetHandler:     budgetH,
+		Cfg:                cfg,
+		Pool:               pool,
+		Version:            version,
+		ProfileHandler:     profileH,
+		CategoryHandler:    categoryH,
+		OnboardingHandler:  onboardingH,
+		BudgetHandler:      budgetH,
+		TransactionHandler: txH,
 	})
 	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	if err := e.Start(addr); err != nil {
