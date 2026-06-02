@@ -1,0 +1,20 @@
+# Go
+/bin
+/tmp
+*.test
+*.out
+coverage.*
+
+# Env / secrets
+.env
+*.local.env
+
+# sqlc generated
+/database/sqlc/generated
+
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/

@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink2: #444441;
+    --ink3: #888780;
+    --ink4: #b4b2a9;
+    --bg: #ffffff;
+    --bg2: #f9f8f4;
+    --bg3: #f1efe8;
+    --border: #e0dfd8;
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --amber: #633806;
+    --amber-bg: #FAEEDA;
+    --red: #791F1F;
+    --red-bg: #FCEBEB;
+    --purple: #3C3489;
+    --purple-bg: #EEEDFE;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Georgia, serif; background: var(--bg2); color: var(--ink); font-size: 15px; line-height: 1.75; }
+
+  /* Layout */
+  .cover { background: var(--ink); color: #fff; padding: 72px 80px 64px; }
+  .cover-label { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #888780; margin-bottom: 20px; }
+  .cover-title { font-size: 48px; font-weight: 700; line-height: 1.1; margin-bottom: 12px; }
+  .cover-sub { font-size: 18px; color: #b4b2a9; font-style: italic; margin-bottom: 40px; }
+  .cover-meta { display: flex; gap: 40px; flex-wrap: wrap; border-top: 1px solid #333; padding-top: 24px; }
+  .meta-item { }
+  .meta-label { font-family: 'Helvetica Neue', sans-serif; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #666; margin-bottom: 4px; }
+  .meta-val { font-size: 14px; color: #ccc; font-family: 'Helvetica Neue', sans-serif; }
+
+  /* TOC */
+  .toc { background: var(--bg); border-bottom: 1px solid var(--border); padding: 40px 80px; }
+  .toc-title { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 20px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 40px; }
+  .toc-item { display: flex; gap: 10px; align-items: baseline; font-family: 'Helvetica Neue', sans-serif; font-size: 13px; color: var(--ink2); text-decoration: none; padding: 4px 0; border-bottom: .5px solid var(--border); }
+  .toc-num { color: var(--ink4); min-width: 20px; font-size: 11px; }
+
+  /* Page */
+  .page { max-width: 900px; margin: 0 auto; padding: 0 80px; background: var(--bg); }
+  .section { padding: 56px 0 40px; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+
+  /* Typography */
+  .sec-num { font-family: 'Helvetica Neue', sans-serif; font-size: 10px; font-weight: 700; color: var(--ink4); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; }
+  .sec-title { font-size: 28px; font-weight: 700; color: var(--ink); margin-bottom: 28px; line-height: 1.2; }
+  h3 { font-size: 17px; font-weight: 700; color: var(--ink); margin: 28px 0 10px; }
+  h4 { font-family: 'Helvetica Neue', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); margin: 20px 0 8px; }
+  p { color: var(--ink2); margin-bottom: 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  /* Callout */
+  .callout { border-left: 3px solid var(--ink); background: var(--bg2); padding: 14px 18px; margin: 20px 0; border-radius: 0 6px 6px 0; }
+  .callout p { font-size: 14px; color: var(--ink2); margin: 0; }
+  .callout.blue { border-color: var(--blue); background: var(--blue-bg); }
+  .callout.blue p { color: var(--blue); }
+  .callout.green { border-color: var(--green); background: var(--green-bg); }
+  .callout.green p { color: var(--green); }
+
+  /* Stats */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+  .stat-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; }
+  .stat-num { font-size: 32px; font-weight: 700; color: var(--ink); font-family: 'Helvetica Neue', sans-serif; }
+  .stat-desc { font-size: 12px; color: var(--ink3); margin-top: 4px; line-height: 1.4; font-family: 'Helvetica Neue', sans-serif; }
+
+  /* Feature list */
+  .feature-list { list-style: none; margin: 16px 0; }
+  .feature-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .feature-item:last-child { border-bottom: none; }
+  .feature-icon { font-size: 20px; width: 28px; flex-shrink: 0; margin-top: 2px; }
+  .feature-body { flex: 1; }
+  .feature-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .feature-desc { font-size: 13px; color: var(--ink3); line-height: 1.6; }
+  .feature-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: 'Helvetica Neue', sans-serif; margin-left: 8px; vertical-align: middle; }
+  .b-mvp { background: var(--blue-bg); color: var(--blue); }
+  .b-v2  { background: var(--bg3); color: var(--ink3); }
+
+  /* User story */
+  .story-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .story { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; }
+  .story-as { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; font-family: 'Helvetica Neue', sans-serif; }
+  .story-text { font-size: 14px; color: var(--ink); line-height: 1.6; }
+  .story-criteria { font-size: 12px; color: var(--ink3); margin-top: 8px; padding-top: 8px; border-top: .5px solid var(--border); }
+
+  /* Tech stack */
+  .stack-group { margin-bottom: 24px; }
+  .stack-layer { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+  .stack-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .stack-table th { text-align: left; padding: 7px 10px; background: var(--bg2); border-bottom: 1px solid var(--border); font-family: 'Helvetica Neue', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+  .stack-table td { padding: 10px; border-bottom: .5px solid var(--border); vertical-align: top; line-height: 1.5; color: var(--ink2); }
+  .stack-table tr:last-child td { border-bottom: none; }
+  .stack-table td:first-child { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .pkg-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: 'Helvetica Neue', sans-serif; }
+  .pb-must { background: var(--blue-bg); color: var(--blue); }
+  .pb-rec  { background: var(--green-bg); color: var(--green); }
+  .pb-skip { background: var(--red-bg); color: var(--red); }
+  .pb-opt  { background: var(--bg3); color: var(--ink3); }
+
+  /* File tree */
+  .file-tree { background: var(--ink); color: #d4d3cb; font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 12.5px; line-height: 1.9; padding: 28px 32px; border-radius: 10px; margin: 20px 0; overflow-x: auto; }
+  .ft-dir { color: #85B7EB; }
+  .ft-file { color: #d4d3cb; }
+  .ft-comment { color: #5F5E5A; }
+  .ft-imp { color: #5DCAA5; font-weight: 700; }
+
+  /* SQL */
+  .sql-block { background: #1a1a18; color: #d4d3cb; font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 12px; line-height: 1.8; padding: 24px 28px; border-radius: 10px; margin: 16px 0; overflow-x: auto; }
+  .sql-kw { color: #85B7EB; font-weight: 700; }
+  .sql-type { color: #5DCAA5; }
+  .sql-comment { color: #5F5E5A; }
+  .sql-str { color: #FAC775; }
+  .sql-fn { color: #EF9F27; }
+
+  /* API table */
+  .api-group { margin-bottom: 28px; }
+  .api-group-title { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .api-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .api-table td { padding: 9px 10px; border-bottom: .5px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .api-table tr:last-child td { border-bottom: none; }
+  .method { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-family: 'Helvetica Neue', sans-serif; min-width: 44px; text-align: center; }
+  .m-get  { background: var(--green-bg); color: var(--green); }
+  .m-post { background: var(--blue-bg); color: var(--blue); }
+  .m-put  { background: var(--amber-bg); color: var(--amber); }
+  .m-patch{ background: var(--purple-bg); color: var(--purple); }
+  .m-del  { background: var(--red-bg); color: var(--red); }
+  .ep-path { font-family: monospace; font-size: 12px; color: var(--ink); }
+  .ep-desc { font-size: 12px; color: var(--ink3); }
+
+  /* JSON example */
+  .json-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; font-family: monospace; font-size: 12px; line-height: 1.7; color: var(--ink2); margin: 12px 0; overflow-x: auto; }
+  .json-key { color: var(--blue); }
+  .json-str { color: var(--green); }
+  .json-num { color: var(--amber); }
+  .json-comment { color: var(--ink4); font-style: italic; }
+
+  /* Analogy table */
+  .analogy-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+  .analogy-table th { background: var(--ink); color: #fff; padding: 10px 14px; text-align: left; font-family: 'Helvetica Neue', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .06em; }
+  .analogy-table td { padding: 10px 14px; border-bottom: .5px solid var(--border); color: var(--ink2); vertical-align: top; line-height: 1.5; }
+  .analogy-table tr:last-child td { border-bottom: none; }
+  .analogy-table td:first-child { color: var(--ink3); font-style: italic; }
+
+  /* Program table */
+  .prog-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+  .prog-table th { background: var(--bg2); padding: 8px 12px; text-align: left; font-family: 'Helvetica Neue', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); border-bottom: 1px solid var(--border); }
+  .prog-table td { padding: 10px 12px; border-bottom: .5px solid var(--border); color: var(--ink2); vertical-align: top; line-height: 1.5; }
+  .prog-table tr:last-child td { border-bottom: none; }
+  .prog-table td:first-child { font-weight: 700; color: var(--ink); }
+
+  /* Diff table */
+  .diff-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+  .diff-table th { background: var(--bg2); padding: 8px 12px; text-align: left; font-family: 'Helvetica Neue', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); border-bottom: 1px solid var(--border); }
+  .diff-table td { padding: 10px 12px; border-bottom: .5px solid var(--border); color: var(--ink2); line-height: 1.5; }
+  .diff-table tr:last-child td { border-bottom: none; }
+  .diff-table td:first-child { font-weight: 700; color: var(--ink); width: 22%; }
+  .td-minus { color: var(--red); }
+  .td-plus  { color: var(--green); }
+
+  /* Footer */
+  .doc-footer { background: var(--ink); color: #5F5E5A; font-family: 'Helvetica Neue', sans-serif; font-size: 11px; padding: 24px 80px; display: flex; justify-content: space-between; }
+
+  @media print {
+    body { background: #fff; }
+    .page { padding: 0 60px; }
+    .cover { padding: 48px 60px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-label">Product & Technical Document · v1.0</div>
+  <div class="cover-title">Fintrack</div>
+  <div class="cover-sub">"Gym app for your money" — financial coach di saku kamu</div>
+  <div class="cover-meta">
+    <div class="meta-item"><div class="meta-label">Tanggal</div><div class="meta-val">April 2026</div></div>
+    <div class="meta-item"><div class="meta-label">Tipe produk</div><div class="meta-val">SaaS · B2C · PWA</div></div>
+    <div class="meta-item"><div class="meta-label">Target awal</div><div class="meta-val">Fresh worker Indonesia</div></div>
+    <div class="meta-item"><div class="meta-label">Status</div><div class="meta-val">Pre-development</div></div>
+    <div class="meta-item"><div class="meta-label">Budget infra</div><div class="meta-val">~$20/bulan</div></div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-title">Daftar isi</div>
+  <div class="toc-grid">
+    <a class="toc-item" href="#s1"><span class="toc-num">01</span> Latar belakang masalah</a>
+    <a class="toc-item" href="#s5"><span class="toc-num">05</span> Backend tech stack</a>
+    <a class="toc-item" href="#s2"><span class="toc-num">02</span> Solusi</a>
+    <a class="toc-item" href="#s6"><span class="toc-num">06</span> Struktur file backend</a>
+    <a class="toc-item" href="#s3"><span class="toc-num">03</span> Fitur</a>
+    <a class="toc-item" href="#s7"><span class="toc-num">07</span> Database schema</a>
+    <a class="toc-item" href="#s4"><span class="toc-num">04</span> User story</a>
+    <a class="toc-item" href="#s8"><span class="toc-num">08</span> API contract</a>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ═══════════════════════════════════════════════════════════ 01 -->
+<div class="section" id="s1">
+  <div class="sec-num">01</div>
+  <div class="sec-title">Latar belakang masalah</div>
+
+  <p>Indonesia menghadapi paradoks keuangan yang menarik: tingkat inklusi keuangan sudah tinggi — hampir seluruh anak muda aktif menggunakan e-wallet seperti GoPay, OVO, dan DANA — namun pemahaman tentang cara mengelolanya masih rendah. Data OJK dan BPS melalui Survei Nasional Literasi dan Inklusi Keuangan (SNLIK) 2024 menunjukkan gap yang signifikan.</p>
+
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-num">75%</div><div class="stat-desc">Inklusi keuangan — sudah aktif pakai produk keuangan digital</div></div>
+    <div class="stat-box"><div class="stat-num">65%</div><div class="stat-desc">Literasi keuangan — paham cara mengelola keuangan dengan benar</div></div>
+    <div class="stat-box"><div class="stat-num">56%</div><div class="stat-desc">Literasi keuangan pelajar & mahasiswa — segmen paling rentan</div></div>
+  </div>
+
+  <p>Gap 10% antara inklusi dan literasi merepresentasikan jutaan orang yang aktif bertransaksi digital setiap hari, namun tidak memiliki pemahaman tentang alokasi keuangan yang sehat. Kelompok paling rentan adalah <strong>fresh worker</strong> — mereka yang baru pertama kali menerima gaji rutin dan belum memiliki kerangka untuk mengelolanya.</p>
+
+  <h3>Tiga masalah utama</h3>
+
+  <div class="feature-list">
+    <div class="feature-item">
+      <div class="feature-icon">❓</div>
+      <div class="feature-body">
+        <div class="feature-title">Tidak tahu distribusi pengeluaran yang sehat</div>
+        <div class="feature-desc">Fresh worker dengan gaji Rp 8–10 juta tidak tahu secara konkret berapa persen yang wajar untuk makan, tempat tinggal, hiburan, dan tabungan. Semua aplikasi yang ada hanya mencatat — tidak ada yang menjelaskan standar yang sehat dalam konteks Indonesia.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">⏰</div>
+      <div class="feature-body">
+        <div class="feature-title">Tidak ada peringatan dini yang berarti</div>
+        <div class="feature-desc">User baru sadar boros ketika tanggal 20 dan uang hampir habis. Tidak ada sistem yang memperingatkan bahwa satu kategori sudah mendekati batas jauh sebelum habis.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✍️</div>
+      <div class="feature-body">
+        <div class="feature-title">Input manual terlalu bergesekan</div>
+        <div class="feature-desc">Setiap transaksi harus membuka app, memilih kategori, mengisi nominal — proses yang terasa seperti pekerjaan tambahan. Ini adalah alasan utama mayoritas pengguna meninggalkan expense tracker dalam minggu pertama.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout blue">
+    <p><strong>Kompetitor yang ada (Money Lover, Wallet by BudgetBakers, Monefy) hanya menyelesaikan masalah pencatatan. Tidak ada yang menyelesaikan masalah pemahaman dan friksi input sekaligus — terutama dalam konteks lokal Indonesia.</strong></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 02 -->
+<div class="section" id="s2">
+  <div class="sec-num">02</div>
+  <div class="sec-title">Solusi</div>
+
+  <p>Fintrack mengadopsi mental model aplikasi gym dan menerapkannya ke manajemen keuangan pribadi. Seperti aplikasi gym yang menanyakan tujuan terlebih dahulu sebelum meresepkan program latihan, Fintrack menanyakan tujuan finansial sebelum mengalokasikan budget — bukan sekadar mencatat apa yang sudah terjadi.</p>
+
+  <h3>Analogi gym → finance</h3>
+
+  <table class="analogy-table">
+    <tr><th>Konsep gym app</th><th>Implementasi Fintrack</th></tr>
+    <tr><td>Onboarding tujuan olahraga</td><td>Onboarding tujuan finansial: dana darurat, bebas utang, nabung, atau investasi</td></tr>
+    <tr><td>Program latihan harian yang dipersonalisasi</td><td>Alokasi budget harian berdasarkan gaji dan tujuan</td></tr>
+    <tr><td>Muscle fatigue warning</td><td>Category fatigue — "Budget makan 85%, mulai hati-hati"</td></tr>
+    <tr><td>Bebas modifikasi dengan konsekuensi</td><td>Bebas overspend, tapi ada warning dan dampak ke tujuan</td></tr>
+    <tr><td>Progressive overload</td><td>Progressive saving rate — naik bertahap tiap bulan</td></tr>
+    <tr><td>Personal Record (PR)</td><td>Best savings month — "Ini bulan terbaikmu!"</td></tr>
+  </table>
+
+  <h3>Program finansial berdasarkan situasi user</h3>
+
+  <table class="prog-table">
+    <tr><th>Program</th><th>Kondisi user</th><th>Framework dasar</th></tr>
+    <tr><td>Program Pondasi</td><td>Belum punya dana darurat</td><td>Pay Yourself First</td></tr>
+    <tr><td>Program Bebas Utang</td><td>Ada utang aktif (CC, paylater, dll)</td><td>Debt Snowball / Avalanche</td></tr>
+    <tr><td>Program Goal Chaser</td><td>Nabung tujuan spesifik</td><td>Zero-Based Budgeting</td></tr>
+    <tr><td>Program Tumbuh</td><td>Dana darurat aman, siap investasi</td><td>50/30/20 + investasi</td></tr>
+    <tr><td>Program Seimbang</td><td>Mau kontrol pengeluaran umum</td><td>50/30/20 standar</td></tr>
+  </table>
+
+  <h3>Diferensiasi dari kompetitor</h3>
+
+  <table class="diff-table">
+    <tr><th>Dimensi</th><th class="td-minus">Kompetitor</th><th class="td-plus">Fintrack</th></tr>
+    <tr><td>Pendekatan</td><td class="td-minus">Tracking-first — catat dulu, lihat hasilnya</td><td class="td-plus">Goal-first — tujuan dulu, plan menyesuaikan</td></tr>
+    <tr><td>Cara bicara</td><td class="td-minus">Data kering seperti laporan akuntan</td><td class="td-plus">Narasi coach — kontekstual, tidak menghakimi</td></tr>
+    <tr><td>Input method</td><td class="td-minus">Manual 30 detik per transaksi</td><td class="td-plus">Foto struk → AI kategorisasi otomatis (~5 detik)</td></tr>
+    <tr><td>Warning system</td><td class="td-minus">Notifikasi batas budget yang kaku</td><td class="td-plus">Category fatigue — warning bertahap</td></tr>
+    <tr><td>Konteks lokal</td><td class="td-minus">US/Euro-centric, IDR sebagai tambahan</td><td class="td-plus">Indonesia-native: IDR, e-wallet, harga lokal</td></tr>
+    <tr><td>Target user</td><td class="td-minus">Semua orang, tidak ada fokus segmen</td><td class="td-plus">Fresh worker Indonesia — persona terdefinisi tajam</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 03 -->
+<div class="section" id="s3">
+  <div class="sec-num">03</div>
+  <div class="sec-title">Fitur</div>
+
+  <div class="feature-list">
+    <div class="feature-item">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-body">
+        <div class="feature-title">Onboarding goal-first <span class="feature-badge b-mvp">MVP</span></div>
+        <div class="feature-desc">6 pertanyaan sederhana tentang situasi dan tujuan finansial user. App generate alokasi budget otomatis yang dipersonalisasi — user tidak perlu tahu nama framework-nya. Expense items sudah diisi default, bisa diedit langsung sebelum selesai.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📸</div>
+      <div class="feature-body">
+        <div class="feature-title">Input foto struk → AI kategorisasi <span class="feature-badge b-mvp">MVP</span></div>
+        <div class="feature-desc">Foto nota atau struk belanja, AI membaca nominal dan merchant, lalu mengkategorikan secara otomatis. User hanya perlu konfirmasi. Total waktu: ~5 detik. Menyelesaikan masalah utama retensi: friksi input yang terlalu tinggi.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💪</div>
+      <div class="feature-body">
+        <div class="feature-title">Dashboard category fatigue <span class="feature-badge b-mvp">MVP</span></div>
+        <div class="feature-desc">Status tiap kategori pengeluaran: Fresh, Warning, atau Fatigued — persis seperti status otot di gym app. Disertai saran kontekstual yang terasa seperti coach, bukan akuntan. Update real-time setiap kali transaksi dicatat.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🛡</div>
+      <div class="feature-body">
+        <div class="feature-title">Dana darurat tracker <span class="feature-badge b-mvp">MVP</span></div>
+        <div class="feature-desc">Lacak progress dana darurat (target 3–6x pengeluaran bulanan) dengan visualisasi yang memotivasi. Estimasi waktu tercapai berdasarkan saving rate saat ini.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📋</div>
+      <div class="feature-body">
+        <div class="feature-title">Weekly summary narasi manusiawi <span class="feature-badge b-mvp">MVP</span></div>
+        <div class="feature-desc">Laporan mingguan dalam bahasa yang mudah dipahami, bukan hanya angka. Perbandingan dengan minggu sebelumnya dan satu saran konkret. Dikirim via email setiap Senin pagi.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">⛓</div>
+      <div class="feature-body">
+        <div class="feature-title">Debt tracker — Snowball & Avalanche <span class="feature-badge b-mvp">MVP</span></div>
+        <div class="feature-desc">Untuk user Program Bebas Utang: daftar utang aktif, urutan pembayaran otomatis, estimasi bulan lunas, dan visualisasi "snowball" yang terbentuk setelah tiap utang lunas.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📈</div>
+      <div class="feature-body">
+        <div class="feature-title">Progressive saving rate <span class="feature-badge b-v2">v2</span></div>
+        <div class="feature-desc">Sistem otomatis menyarankan kenaikan persentase tabungan setiap bulan kalau user konsisten — seperti progressive overload di gym.</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-body">
+        <div class="feature-title">Agent API / MCP Server (BYOA) <span class="feature-badge b-v2">v2</span></div>
+        <div class="feature-desc">User yang punya AI agent sendiri (LangChain, Claude Desktop, dll) bisa generate access token dan sambungkan agent mereka ke data keuangan di Fintrack. Agent bisa query pengeluaran, catat transaksi, dan cek status budget via natural language.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 04 -->
+<div class="section" id="s4">
+  <div class="sec-num">04</div>
+  <div class="sec-title">User story</div>
+
+  <h3>Onboarding</h3>
+  <div class="story-list">
+    <div class="story">
+      <div class="story-as">Sebagai fresh worker</div>
+      <div class="story-text">Saya ingin menjawab beberapa pertanyaan tentang situasi keuangan saya, agar app bisa langsung memberikan rencana alokasi yang cocok tanpa saya harus set up manual dari nol.</div>
+      <div class="story-criteria">✓ Onboarding selesai dalam < 3 menit · ✓ Budget items sudah diisi default · ✓ Bisa edit nominal sebelum konfirmasi</div>
+    </div>
+    <div class="story">
+      <div class="story-as">Sebagai fresh worker yang merantau</div>
+      <div class="story-text">Saya ingin bisa menambahkan kosan dan KPR sekaligus sebagai pengeluaran wajib, meskipun keduanya melebihi 50% gaji, agar app tetap memberikan rencana yang realistis untuk situasi saya.</div>
+      <div class="story-criteria">✓ App deteksi kalau kebutuhan > 50% dan berikan warning jujur · ✓ Program tetap dihasilkan dengan alokasi yang disesuaikan</div>
+    </div>
+  </div>
+
+  <h3>Pencatatan transaksi</h3>
+  <div class="story-list">
+    <div class="story">
+      <div class="story-as">Sebagai pengguna yang sibuk</div>
+      <div class="story-text">Saya ingin bisa mencatat pengeluaran hanya dengan foto struk, agar saya tidak perlu repot mengisi form manual setiap kali belanja.</div>
+      <div class="story-criteria">✓ Foto → hasil AI muncul dalam < 3 detik · ✓ Bisa koreksi kategori sebelum simpan · ✓ Confidence score ditampilkan</div>
+    </div>
+    <div class="story">
+      <div class="story-as">Sebagai pengguna</div>
+      <div class="story-text">Saya ingin langsung mendapat notifikasi status budget saat mencatat transaksi, agar saya tahu apakah pengeluaran saya masih aman tanpa harus buka halaman dashboard.</div>
+      <div class="story-criteria">✓ Response POST /transactions mengandung fatigue_alert · ✓ Status ditampilkan inline di konfirmasi transaksi</div>
+    </div>
+  </div>
+
+  <h3>Monitoring & fatigue</h3>
+  <div class="story-list">
+    <div class="story">
+      <div class="story-as">Sebagai pengguna</div>
+      <div class="story-text">Saya ingin melihat status setiap kategori pengeluaran seperti indikator di gym app, agar saya tahu mana yang masih aman dan mana yang perlu dikurangi — tanpa harus menganalisis angka sendiri.</div>
+      <div class="story-criteria">✓ Status Fresh/Warning/Fatigued jelas terlihat · ✓ Ada saran kontekstual per kategori · ✓ Update real-time</div>
+    </div>
+    <div class="story">
+      <div class="story-as">Sebagai pengguna</div>
+      <div class="story-text">Saya ingin menerima ringkasan mingguan dalam bahasa yang mudah dimengerti setiap Senin, agar saya bisa evaluasi minggu lalu dan berencana untuk minggu depan.</div>
+      <div class="story-criteria">✓ Narasi dalam Bahasa Indonesia · ✓ Ada perbandingan vs minggu lalu · ✓ Satu saran konkret yang actionable</div>
+    </div>
+  </div>
+
+  <h3>Program Bebas Utang</h3>
+  <div class="story-list">
+    <div class="story">
+      <div class="story-as">Sebagai pengguna dengan utang CC Rp 20 juta</div>
+      <div class="story-text">Saya ingin app memberitahu saya utang mana yang harus dilunasi duluan dan berapa yang harus dibayar setiap bulan, agar saya punya arah yang jelas tanpa harus menghitung sendiri.</div>
+      <div class="story-criteria">✓ Urutan pembayaran otomatis (snowball/avalanche) · ✓ Estimasi bulan lunas tiap utang · ✓ Update setelah tiap pembayaran</div>
+    </div>
+  </div>
+
+  <h3>Privacy & kepercayaan</h3>
+  <div class="story-list">
+    <div class="story">
+      <div class="story-as">Sebagai pengguna yang sensitif soal data finansial</div>
+      <div class="story-text">Saya ingin tahu bahwa gaji saya tidak bisa dibaca oleh siapapun termasuk pemilik app, agar saya merasa aman memasukkan data keuangan yang sensitif.</div>
+      <div class="story-criteria">✓ Income dienkripsi AES-256-GCM sebelum masuk DB · ✓ income_hint "Rp 8jt" yang ditampilkan di UI · ✓ Privacy Policy transparan di onboarding</div>
+    </div>
+    <div class="story">
+      <div class="story-as">Sebagai pengguna yang punya AI agent sendiri</div>
+      <div class="story-text">Saya ingin bisa menghubungkan agent AI saya ke Fintrack, agar saya bisa tanya status keuangan saya langsung dari chat agent tanpa buka app.</div>
+      <div class="story-criteria">✓ Generate access token dari settings · ✓ Token ditampilkan sekali saja · ✓ Bisa set scope read-only atau read-write</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 05 -->
+<div class="section" id="s5">
+  <div class="sec-num">05</div>
+  <div class="sec-title">Backend tech stack</div>
+
+  <div class="callout">
+    <p>Bahasa: <strong>Go (Golang)</strong> · Database: <strong>PostgreSQL</strong> · Deploy: <strong>Railway ~$5/bln</strong></p>
+  </div>
+
+  <div class="stack-group">
+    <div class="stack-layer">HTTP Framework</div>
+    <table class="stack-table">
+      <tr><th>Package</th><th>Keterangan</th><th>Status</th></tr>
+      <tr><td>Echo v4</td><td>Framework utama. Middleware chain clean, grouping route rapi, built-in validator, error handling eksplisit. Lebih structured dari Gin untuk project yang berkembang.</td><td><span class="pkg-badge pb-must">Pilihan utama</span></td></tr>
+    </table>
+  </div>
+
+  <div class="stack-group">
+    <div class="stack-layer">Database Layer</div>
+    <table class="stack-table">
+      <tr><th>Package</th><th>Keterangan</th><th>Status</th></tr>
+      <tr><td>sqlc</td><td>Generate type-safe Go code dari SQL query. Tulis SQL biasa → sqlc generate fungsi Go-nya. Query transparan, performa maksimal. Sangat cocok untuk financial app yang butuh akurasi query.</td><td><span class="pkg-badge pb-must">Wajib</span></td></tr>
+      <tr><td>pgx/v5</td><td>Driver PostgreSQL terbaik untuk Go. Lebih cepat dari lib/pq, support semua fitur Postgres modern, default driver untuk sqlc.</td><td><span class="pkg-badge pb-must">Wajib</span></td></tr>
+      <tr><td>golang-migrate</td><td>Manajemen migration database. File .sql untuk setiap perubahan schema — versioning naik/turun dengan satu command. Penting sejak hari pertama.</td><td><span class="pkg-badge pb-must">Wajib dari awal</span></td></tr>
+      <tr><td>GORM</td><td>ORM populer tapi tidak cocok untuk financial app. Query tersembunyi, susah debug, performa lebih lambat. SQL eksplisit jauh lebih aman untuk agregasi keuangan.</td><td><span class="pkg-badge pb-skip">Hindari</span></td></tr>
+    </table>
+  </div>
+
+  <div class="stack-group">
+    <div class="stack-layer">Auth & Security</div>
+    <table class="stack-table">
+      <tr><th>Package</th><th>Keterangan</th><th>Status</th></tr>
+      <tr><td>golang-jwt/jwt</td><td>Validasi JWT token dari Supabase Auth. Ringan, well-maintained, cukup untuk middleware auth di semua endpoint.</td><td><span class="pkg-badge pb-must">Wajib</span></td></tr>
+      <tr><td>crypto/aes (stdlib)</td><td>Enkripsi income AES-256-GCM. Sudah ada di standard library Go — zero dependency tambahan untuk fitur enkripsi income.</td><td><span class="pkg-badge pb-must">Built-in</span></td></tr>
+      <tr><td>golang.org/x/crypto</td><td>bcrypt untuk hash API token (BYOA) dan utility kriptografi tambahan. Dari tim Go official.</td><td><span class="pkg-badge pb-rec">Direkomendasikan</span></td></tr>
+    </table>
+  </div>
+
+  <div class="stack-group">
+    <div class="stack-layer">AI Integration</div>
+    <table class="stack-table">
+      <tr><th>Package</th><th>Keterangan</th><th>Status</th></tr>
+      <tr><td>net/http (stdlib)</td><td>Call Claude API (Vision + Haiku) cukup pakai HTTP biasa. Lebih sedikit dependency, mudah dikontrol timeout, retry, dan error handling.</td><td><span class="pkg-badge pb-must">Cukup ini</span></td></tr>
+    </table>
+  </div>
+
+  <div class="stack-group">
+    <div class="stack-layer">Utilities</div>
+    <table class="stack-table">
+      <tr><th>Package</th><th>Keterangan</th><th>Status</th></tr>
+      <tr><td>viper</td><td>Manajemen environment variables dan config. Beda config local vs production dengan mudah.</td><td><span class="pkg-badge pb-rec">Direkomendasikan</span></td></tr>
+      <tr><td>go-playground/validator</td><td>Validasi request payload dengan struct tags. Terintegrasi dengan Echo.</td><td><span class="pkg-badge pb-must">Wajib</span></td></tr>
+      <tr><td>rs/zerolog</td><td>Structured logging ringan dan cepat. Output JSON — mudah di-parse di Railway logs.</td><td><span class="pkg-badge pb-rec">Direkomendasikan</span></td></tr>
+      <tr><td>google/uuid</td><td>Generate UUID v4 untuk primary key semua tabel.</td><td><span class="pkg-badge pb-must">Wajib</span></td></tr>
+    </table>
+  </div>
+
+  <div class="stack-group">
+    <div class="stack-layer">Testing</div>
+    <table class="stack-table">
+      <tr><th>Package</th><th>Keterangan</th><th>Status</th></tr>
+      <tr><td>testing (stdlib)</td><td>Standard library Go sudah sangat capable untuk unit test dengan table-driven tests.</td><td><span class="pkg-badge pb-must">Built-in</span></td></tr>
+      <tr><td>testify</td><td>assert.Equal yang lebih readable dari if-else manual.</td><td><span class="pkg-badge pb-rec">Direkomendasikan</span></td></tr>
+      <tr><td>sqlmock</td><td>Mock database untuk unit test repository layer tanpa koneksi DB nyata.</td><td><span class="pkg-badge pb-rec">Direkomendasikan</span></td></tr>
+    </table>
+  </div>
+
+  <h4>Yang sengaja tidak dimasukkan</h4>
+  <p style="font-size:13px; color: var(--ink3);">GraphQL (overkill untuk REST yang jelas) · Redis (belum dibutuhkan, PostgreSQL cukup) · gRPC (satu service, tidak relevan) · Message queue (goroutine cukup untuk weekly email) · Docker (Railway sudah handle tanpa Docker)</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 06 -->
+<div class="section" id="s6">
+  <div class="sec-num">06</div>
+  <div class="sec-title">Struktur file backend</div>
+
+  <p>Arsitektur menggunakan <strong>monorepo</strong> dengan <strong>dependency injection manual</strong> dan siap untuk <strong>multi-service</strong>. Dependency flow satu arah: handler → service → repository → database.</p>
+
+  <div style="background:#1a1a18;border-radius:10px;padding:28px 32px;margin:20px 0;overflow-x:auto;">
+  <table style="border-collapse:collapse;font-family:'SF Mono','Fira Mono',monospace;font-size:12.5px;line-height:1.9;width:100%;">
+    <tbody>
+      <tr><td style="color:#85B7EB;white-space:nowrap;padding-right:20px;">fintrack/</td><td style="color:#5F5E5A;"># root monorepo</td></tr>
+      <tr><td colspan="2" style="color:#444;padding:2px 0;font-size:10px;letter-spacing:.08em;">── apps/</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">apps/api/main.go</td><td style="color:#5F5E5A;">bootstrap: load config, wire DI, start server</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">apps/api/Dockerfile</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">apps/worker/main.go</td><td style="color:#5F5E5A;">background job: weekly email, dll</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">apps/worker/Dockerfile</td><td style="color:#5F5E5A;"></td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── internal/ &nbsp;<span style="color:#5F5E5A;font-size:10px;">kode private monorepo</span></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">internal/config/config.go</td><td style="color:#5F5E5A;">struct Config, load env via viper</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">internal/server/server.go</td><td style="color:#5F5E5A;">inisialisasi Echo, middleware global</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">internal/server/routes.go</td><td style="color:#5F5E5A;">register semua route ke handler</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">internal/middleware/auth.go</td><td style="color:#5F5E5A;">validasi JWT dari Supabase</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">internal/middleware/logger.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">internal/middleware/ratelimit.go</td><td style="color:#5F5E5A;"></td></tr>
+
+      <tr><td colspan="2" style="color:#5DCAA5;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;font-weight:700;">── internal/domain/ &nbsp;<span style="color:#5F5E5A;font-weight:400;">inti bisnis — tidak tahu soal HTTP atau DB</span></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/user/entity.go</td><td style="color:#5F5E5A;">struct User, UserProfile</td></tr>
+      <tr><td style="color:#5DCAA5;padding-left:24px;white-space:nowrap;">domain/user/repository.go</td><td style="color:#5F5E5A;">interface Repository — kontrak ke DB</td></tr>
+      <tr><td style="color:#5DCAA5;padding-left:24px;white-space:nowrap;">domain/user/service.go</td><td style="color:#5F5E5A;">interface Service + implementasi logika</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/budget/entity.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/budget/repository.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/budget/service.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#5DCAA5;padding-left:24px;white-space:nowrap;">domain/budget/engine.go</td><td style="color:#5F5E5A;">algoritma onboarding → alokasi budget</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/transaction/entity.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/transaction/repository.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/transaction/service.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/fatigue/entity.go</td><td style="color:#5F5E5A;">struct CategoryFatigue, FatigueStatus</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/fatigue/service.go</td><td style="color:#5F5E5A;">hitung %, tentukan fresh/warning/fatigued</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/debt/entity.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/debt/service.go</td><td style="color:#5F5E5A;">snowball / avalanche logic</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/report/entity.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">domain/report/service.go</td><td style="color:#5F5E5A;">generate narasi weekly report</td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── internal/handler/ &nbsp;<span style="color:#5F5E5A;">HTTP handler — parse request, call service</span></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/user_handler.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/budget_handler.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/transaction_handler.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/fatigue_handler.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/debt_handler.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/report_handler.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/dto/budget_dto.go</td><td style="color:#5F5E5A;">request & response struct</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/dto/transaction_dto.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">handler/dto/user_dto.go</td><td style="color:#5F5E5A;"></td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── internal/repository/ &nbsp;<span style="color:#5F5E5A;">implementasi interface dari domain/</span></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">repository/user_repo.go</td><td style="color:#5F5E5A;">query PostgreSQL via sqlc</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">repository/budget_repo.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">repository/transaction_repo.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">repository/debt_repo.go</td><td style="color:#5F5E5A;"></td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── internal/ai/</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">ai/client.go</td><td style="color:#5F5E5A;">HTTP client ke Anthropic API</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">ai/categorizer.go</td><td style="color:#5F5E5A;">foto struk → kategori + amount</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">ai/summarizer.go</td><td style="color:#5F5E5A;">generate weekly report narasi</td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── internal/encryption/ &nbsp;&nbsp; ── internal/worker/</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">encryption/aes.go</td><td style="color:#5F5E5A;">EncryptIncome, DecryptIncome, MaskIncome</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">worker/weekly_report.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">worker/scheduler.go</td><td style="color:#5F5E5A;">cron via gocron</td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── pkg/ &nbsp;<span style="color:#5F5E5A;">kode public — boleh dipakai semua service</span></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">pkg/apperror/errors.go</td><td style="color:#5F5E5A;">NotFound, Unauthorized, BadRequest, dll</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">pkg/response/response.go</td><td style="color:#5F5E5A;">format JSON sukses & error</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">pkg/logger/logger.go</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">pkg/validator/validator.go</td><td style="color:#5F5E5A;"></td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── database/</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">database/migrations/000001_create_users.up.sql</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">database/migrations/000001_create_users.down.sql</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">database/migrations/000002_create_budgets.up.sql</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#5DCAA5;padding-left:24px;white-space:nowrap;">database/sqlc/sqlc.yaml</td><td style="color:#5F5E5A;">konfigurasi sqlc</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">database/sqlc/query/user.sql</td><td style="color:#5F5E5A;">SQL yang kamu tulis</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">database/sqlc/query/budget.sql</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">database/sqlc/query/transaction.sql</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#85B7EB;padding-left:24px;white-space:nowrap;">database/sqlc/generated/</td><td style="color:#5F5E5A;">hasil generate sqlc — JANGAN edit manual</td></tr>
+
+      <tr><td colspan="2" style="color:#444;padding:6px 0 2px;font-size:10px;letter-spacing:.08em;">── root</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">web/</td><td style="color:#5F5E5A;">frontend React PWA</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">scripts/migrate.sh</td><td style="color:#5F5E5A;"></td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">scripts/generate.sh</td><td style="color:#5F5E5A;">jalankan sqlc generate</td></tr>
+      <tr><td style="color:#d4d3cb;padding-left:24px;white-space:nowrap;">.env.example &nbsp;· &nbsp;go.mod &nbsp;· &nbsp;Makefile &nbsp;· &nbsp;README.md</td><td style="color:#5F5E5A;"></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout green">
+    <p><strong>Prinsip DI:</strong> Semua dependency di-inject dari main.go ke bawah. Domain layer hanya mengenal interface — bukan implementasi konkret. Test inject mock, production inject implementasi nyata. Tidak ada framework DI (Wire, Fx) — manual wiring di main.go lebih transparan untuk solo dev.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 07 -->
+<div class="section" id="s7">
+  <div class="sec-num">07</div>
+  <div class="sec-title">Database schema</div>
+
+  <p>Database: <strong>PostgreSQL via Supabase</strong>. Semua tabel dilindungi Row Level Security (RLS) — user hanya bisa akses data miliknya. Income dienkripsi AES-256-GCM di aplikasi sebelum masuk DB.</p>
+
+  <h3>Tabel utama</h3>
+
+  <div class="sql-block">
+<span class="sql-comment">-- ENUM TYPES</span>
+<span class="sql-kw">CREATE TYPE</span> expense_category_type <span class="sql-kw">AS ENUM</span> (<span class="sql-str">'fixed'</span>, <span class="sql-str">'variable'</span>, <span class="sql-str">'debt'</span>, <span class="sql-str">'want'</span>);
+<span class="sql-kw">CREATE TYPE</span> financial_program <span class="sql-kw">AS ENUM</span> (<span class="sql-str">'pondasi'</span>, <span class="sql-str">'bebas_utang'</span>, <span class="sql-str">'goal_chaser'</span>, <span class="sql-str">'tumbuh'</span>, <span class="sql-str">'seimbang'</span>);
+<span class="sql-kw">CREATE TYPE</span> fatigue_status <span class="sql-kw">AS ENUM</span> (<span class="sql-str">'fresh'</span>, <span class="sql-str">'warning'</span>, <span class="sql-str">'fatigued'</span>);
+<span class="sql-kw">CREATE TYPE</span> debt_method <span class="sql-kw">AS ENUM</span> (<span class="sql-str">'snowball'</span>, <span class="sql-str">'avalanche'</span>);
+<span class="sql-kw">CREATE TYPE</span> lifestyle_style <span class="sql-kw">AS ENUM</span> (<span class="sql-str">'easy'</span>, <span class="sql-str">'balanced'</span>, <span class="sql-str">'strict'</span>);
+<span class="sql-kw">CREATE TYPE</span> housing_type <span class="sql-kw">AS ENUM</span> (<span class="sql-str">'kosan'</span>, <span class="sql-str">'kpr'</span>, <span class="sql-str">'keluarga'</span>);
+  </div>
+
+  <div class="sql-block">
+<span class="sql-comment">-- 1. USER PROFILES</span>
+<span class="sql-kw">CREATE TABLE</span> user_profiles (
+    id                  <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id             <span class="sql-type">UUID NOT NULL UNIQUE</span>,  <span class="sql-comment">-- FK ke auth.users Supabase</span>
+    income_encrypted    <span class="sql-type">TEXT</span>,               <span class="sql-comment">-- AES-256-GCM ciphertext</span>
+    income_hint         <span class="sql-type">VARCHAR(20)</span>,        <span class="sql-comment">-- "Rp 8jt" untuk UI</span>
+    housing_type        housing_type,
+    lifestyle_style     lifestyle_style,
+    emergency_months    <span class="sql-type">SMALLINT DEFAULT</span> 0,
+    active_program      financial_program,
+    onboarding_done     <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    created_at          <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    updated_at          <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+);
+
+<span class="sql-comment">-- 2. EXPENSE CATEGORIES (system default + custom user)</span>
+<span class="sql-kw">CREATE TABLE</span> expense_categories (
+    id          <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id     <span class="sql-type">UUID</span>,                <span class="sql-comment">-- NULL = system default</span>
+    name        <span class="sql-type">VARCHAR(100) NOT NULL</span>,
+    icon        <span class="sql-type">VARCHAR(10)</span>,
+    type        expense_category_type <span class="sql-type">NOT NULL</span>,
+    is_default  <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    is_active   <span class="sql-type">BOOLEAN DEFAULT TRUE</span>,
+    sort_order  <span class="sql-type">SMALLINT DEFAULT</span> 0,
+    created_at  <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+);
+
+<span class="sql-comment">-- 3. BUDGET PLANS (satu per user per bulan)</span>
+<span class="sql-kw">CREATE TABLE</span> budget_plans (
+    id           <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id      <span class="sql-type">UUID NOT NULL</span>,
+    period_year  <span class="sql-type">SMALLINT NOT NULL</span>,
+    period_month <span class="sql-type">SMALLINT NOT NULL</span>,
+    total_income <span class="sql-type">BIGINT NOT NULL</span>,
+    program      financial_program <span class="sql-type">NOT NULL</span>,
+    created_at   <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    updated_at   <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    <span class="sql-kw">UNIQUE</span> (user_id, period_year, period_month)
+);
+
+<span class="sql-comment">-- 4. BUDGET ITEMS (alokasi per kategori dalam satu plan)</span>
+<span class="sql-kw">CREATE TABLE</span> budget_items (
+    id               <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    budget_plan_id   <span class="sql-type">UUID NOT NULL REFERENCES</span> budget_plans(id) <span class="sql-kw">ON DELETE CASCADE</span>,
+    category_id      <span class="sql-type">UUID NOT NULL REFERENCES</span> expense_categories(id),
+    allocated_amount <span class="sql-type">BIGINT NOT NULL</span>,
+    percentage       <span class="sql-type">NUMERIC(5,2)</span>,
+    is_debt_focus    <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    created_at       <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    updated_at       <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    <span class="sql-kw">UNIQUE</span> (budget_plan_id, category_id)
+);
+
+<span class="sql-comment">-- 5. TRANSACTIONS</span>
+<span class="sql-kw">CREATE TABLE</span> transactions (
+    id              <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id         <span class="sql-type">UUID NOT NULL</span>,
+    budget_plan_id  <span class="sql-type">UUID REFERENCES</span> budget_plans(id),
+    category_id     <span class="sql-type">UUID NOT NULL REFERENCES</span> expense_categories(id),
+    amount          <span class="sql-type">BIGINT NOT NULL</span>,         <span class="sql-comment">-- plaintext, dilindungi RLS</span>
+    note            <span class="sql-type">TEXT</span>,
+    receipt_url     <span class="sql-type">TEXT</span>,
+    ai_categorized  <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    ai_confidence   <span class="sql-type">NUMERIC(3,2)</span>,
+    transacted_at   <span class="sql-type">TIMESTAMPTZ NOT NULL</span>,
+    created_at      <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    updated_at      <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+);
+
+<span class="sql-comment">-- 6. DEBT ITEMS</span>
+<span class="sql-kw">CREATE TABLE</span> debt_items (
+    id              <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id         <span class="sql-type">UUID NOT NULL</span>,
+    category_id     <span class="sql-type">UUID REFERENCES</span> expense_categories(id),
+    name            <span class="sql-type">VARCHAR(100) NOT NULL</span>,
+    total_amount    <span class="sql-type">BIGINT NOT NULL</span>,
+    current_balance <span class="sql-type">BIGINT NOT NULL</span>,
+    interest_rate   <span class="sql-type">NUMERIC(5,2) NOT NULL</span>,
+    min_payment     <span class="sql-type">BIGINT NOT NULL</span>,
+    method          debt_method <span class="sql-kw">DEFAULT</span> <span class="sql-str">'snowball'</span>,
+    priority        <span class="sql-type">SMALLINT DEFAULT</span> 1,
+    is_active       <span class="sql-type">BOOLEAN DEFAULT TRUE</span>,
+    started_at      <span class="sql-type">DATE NOT NULL</span>,
+    target_paid_at  <span class="sql-type">DATE</span>,
+    paid_at         <span class="sql-type">DATE</span>,
+    created_at      <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    updated_at      <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+);
+
+<span class="sql-comment">-- 7. GOALS</span>
+<span class="sql-kw">CREATE TABLE</span> goals (
+    id              <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id         <span class="sql-type">UUID NOT NULL</span>,
+    name            <span class="sql-type">VARCHAR(100) NOT NULL</span>,
+    icon            <span class="sql-type">VARCHAR(10)</span>,
+    target_amount   <span class="sql-type">BIGINT NOT NULL</span>,
+    current_amount  <span class="sql-type">BIGINT DEFAULT</span> 0,
+    target_date     <span class="sql-type">DATE</span>,
+    is_completed    <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    is_primary      <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    created_at      <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    updated_at      <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+);
+
+<span class="sql-comment">-- 8. WEEKLY REPORTS (cache hasil generate)</span>
+<span class="sql-kw">CREATE TABLE</span> weekly_reports (
+    id            <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id       <span class="sql-type">UUID NOT NULL</span>,
+    week_start    <span class="sql-type">DATE NOT NULL</span>,
+    week_end      <span class="sql-type">DATE NOT NULL</span>,
+    total_spent   <span class="sql-type">BIGINT NOT NULL DEFAULT</span> 0,
+    total_budget  <span class="sql-type">BIGINT NOT NULL DEFAULT</span> 0,
+    narrative     <span class="sql-type">TEXT</span>,
+    generated_at  <span class="sql-type">TIMESTAMPTZ</span>,
+    email_sent_at <span class="sql-type">TIMESTAMPTZ</span>,
+    created_at    <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>,
+    <span class="sql-kw">UNIQUE</span> (user_id, week_start)
+);
+
+<span class="sql-comment">-- 9. API TOKENS (untuk BYOA)</span>
+<span class="sql-kw">CREATE TABLE</span> api_tokens (
+    id           <span class="sql-type">UUID PRIMARY KEY</span> <span class="sql-kw">DEFAULT</span> <span class="sql-fn">uuid_generate_v4()</span>,
+    user_id      <span class="sql-type">UUID NOT NULL</span>,
+    name         <span class="sql-type">VARCHAR(100) NOT NULL</span>,
+    token_hash   <span class="sql-type">TEXT NOT NULL UNIQUE</span>,  <span class="sql-comment">-- bcrypt hash, tidak simpan plaintext</span>
+    token_hint   <span class="sql-type">VARCHAR(10)</span>,           <span class="sql-comment">-- 4 char terakhir untuk display</span>
+    can_read     <span class="sql-type">BOOLEAN DEFAULT TRUE</span>,
+    can_write    <span class="sql-type">BOOLEAN DEFAULT FALSE</span>,
+    last_used_at <span class="sql-type">TIMESTAMPTZ</span>,
+    expires_at   <span class="sql-type">TIMESTAMPTZ</span>,
+    is_active    <span class="sql-type">BOOLEAN DEFAULT TRUE</span>,
+    created_at   <span class="sql-type">TIMESTAMPTZ NOT NULL DEFAULT NOW()</span>
+);
+  </div>
+
+  <h3>ERD — Entity Relationship Diagram</h3>
+  <p>Copy kode berikut ke <a href="https://mermaid.live" target="_blank">mermaid.live</a> untuk melihat ERD secara visual.</p>
+
+  <div class="sql-block" style="background:#0f1117;">
+<span style="color:#5F5E5A;">```mermaid</span>
+erDiagram
+    user_profiles {
+        uuid id PK
+        uuid user_id UK
+        text income_encrypted
+        varchar income_hint
+        enum housing_type
+        enum lifestyle_style
+        smallint emergency_months
+        enum active_program
+        bool onboarding_done
+    }
+    expense_categories {
+        uuid id PK
+        uuid user_id "NULL=system default"
+        varchar name
+        varchar icon
+        enum type
+        bool is_default
+        bool is_active
+    }
+    budget_plans {
+        uuid id PK
+        uuid user_id FK
+        smallint period_year
+        smallint period_month
+        bigint total_income
+        enum program
+    }
+    budget_items {
+        uuid id PK
+        uuid budget_plan_id FK
+        uuid category_id FK
+        bigint allocated_amount
+        numeric percentage
+        bool is_debt_focus
+    }
+    transactions {
+        uuid id PK
+        uuid user_id FK
+        uuid budget_plan_id FK
+        uuid category_id FK
+        bigint amount
+        text note
+        text receipt_url
+        bool ai_categorized
+        numeric ai_confidence
+        timestamptz transacted_at
+    }
+    debt_items {
+        uuid id PK
+        uuid user_id FK
+        uuid category_id FK
+        varchar name
+        bigint total_amount
+        bigint current_balance
+        numeric interest_rate
+        bigint min_payment
+        enum method
+        smallint priority
+        bool is_active
+    }
+    goals {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        bigint target_amount
+        bigint current_amount
+        date target_date
+        bool is_primary
+        bool is_completed
+    }
+    weekly_reports {
+        uuid id PK
+        uuid user_id FK
+        date week_start
+        date week_end
+        bigint total_spent
+        bigint total_budget
+        text narrative
+        timestamptz email_sent_at
+    }
+    api_tokens {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        text token_hash
+        bool can_read
+        bool can_write
+        bool is_active
+        timestamptz expires_at
+    }
+
+    user_profiles ||--o{ budget_plans : "punya"
+    user_profiles ||--o{ transactions : "mencatat"
+    user_profiles ||--o{ debt_items : "punya"
+    user_profiles ||--o{ goals : "punya"
+    user_profiles ||--o{ weekly_reports : "punya"
+    user_profiles ||--o{ api_tokens : "generate"
+    user_profiles ||--o{ expense_categories : "custom kategori"
+    budget_plans ||--o{ budget_items : "terdiri dari"
+    budget_plans ||--o{ transactions : "periode"
+    expense_categories ||--o{ budget_items : "kategorisasi"
+    expense_categories ||--o{ transactions : "kategorisasi"
+    expense_categories ||--o{ debt_items : "link"
+<span style="color:#5F5E5A;">```</span>
+  </div>
+
+  <h3>Indexes & RLS</h3>
+  <div class="sql-block">
+<span class="sql-comment">-- INDEXES</span>
+<span class="sql-kw">CREATE INDEX</span> idx_transactions_user_period  <span class="sql-kw">ON</span> transactions (user_id, transacted_at <span class="sql-kw">DESC</span>);
+<span class="sql-kw">CREATE INDEX</span> idx_transactions_user_category <span class="sql-kw">ON</span> transactions (user_id, category_id, transacted_at <span class="sql-kw">DESC</span>);
+<span class="sql-kw">CREATE INDEX</span> idx_budget_plans_user_period   <span class="sql-kw">ON</span> budget_plans (user_id, period_year, period_month);
+<span class="sql-kw">CREATE INDEX</span> idx_debt_items_user_active     <span class="sql-kw">ON</span> debt_items (user_id, is_active, priority);
+<span class="sql-kw">CREATE INDEX</span> idx_goals_user                 <span class="sql-kw">ON</span> goals (user_id, is_primary);
+
+<span class="sql-comment">-- ROW LEVEL SECURITY</span>
+<span class="sql-kw">ALTER TABLE</span> user_profiles      <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> expense_categories <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> budget_plans       <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> budget_items       <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> transactions       <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> debt_items         <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> goals              <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> weekly_reports     <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="sql-kw">ALTER TABLE</span> api_tokens         <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="sql-comment">-- Policy: user hanya akses data miliknya</span>
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-str">"user akses transaksi sendiri"</span>
+    <span class="sql-kw">ON</span> transactions <span class="sql-kw">FOR ALL USING</span> (user_id = <span class="sql-fn">auth.uid()</span>);
+
+<span class="sql-comment">-- Policy: kategori — user lihat system default + punya sendiri</span>
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-str">"user lihat kategori sendiri dan system default"</span>
+    <span class="sql-kw">ON</span> expense_categories <span class="sql-kw">FOR SELECT</span>
+    <span class="sql-kw">USING</span> (user_id <span class="sql-kw">IS NULL OR</span> user_id = <span class="sql-fn">auth.uid()</span>);
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 08 -->
+<div class="section" id="s8">
+  <div class="sec-num">08</div>
+  <div class="sec-title">API contract</div>
+
+  <div class="callout">
+    <p><strong>Base URL:</strong> https://api.fintrack.id/v1 &nbsp;·&nbsp; <strong>Auth:</strong> Authorization: Bearer &lt;JWT&gt; di semua endpoint kecuali /health &nbsp;·&nbsp; <strong>Amount:</strong> selalu integer dalam Rupiah &nbsp;·&nbsp; <strong>Timestamp:</strong> RFC3339</p>
+  </div>
+
+  <h4>Standard response envelope</h4>
+  <div class="json-block"><span class="json-comment">// Sukses singular</span>
+{ <span class="json-key">"data"</span>: { ... }, <span class="json-key">"meta"</span>: { <span class="json-key">"request_id"</span>: <span class="json-str">"uuid"</span> } }
+
+<span class="json-comment">// Sukses list</span>
+{ <span class="json-key">"data"</span>: [ ... ], <span class="json-key">"meta"</span>: { <span class="json-key">"total"</span>: <span class="json-num">42</span>, <span class="json-key">"page"</span>: <span class="json-num">1</span>, <span class="json-key">"per_page"</span>: <span class="json-num">20</span> } }
+
+<span class="json-comment">// Error</span>
+{ <span class="json-key">"error"</span>: { <span class="json-key">"code"</span>: <span class="json-str">"VALIDATION_ERROR"</span>, <span class="json-key">"message"</span>: <span class="json-str">"amount harus lebih dari 0"</span>,
+             <span class="json-key">"fields"</span>: { <span class="json-key">"amount"</span>: <span class="json-str">"harus lebih dari 0"</span> } } }
+
+<span class="json-comment">// Error codes: VALIDATION_ERROR · UNAUTHORIZED · FORBIDDEN · NOT_FOUND · CONFLICT · INTERNAL_ERROR · AI_ERROR</span></div>
+
+  <!-- ── SYSTEM ── -->
+  <div class="api-group">
+    <div class="api-group-title">System</div>
+    <table class="api-table">
+      <tr>
+        <td style="width:80px"><span class="method m-get">GET</span></td>
+        <td class="ep-path" style="width:160px">/health</td>
+        <td class="ep-desc">Health check · <em>public</em></td>
+      </tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// 200 Response</span>
+{ <span class="json-key">"data"</span>: { <span class="json-key">"status"</span>: <span class="json-str">"ok"</span>, <span class="json-key">"version"</span>: <span class="json-str">"1.0.0"</span>, <span class="json-key">"db"</span>: <span class="json-str">"ok"</span> } }</div>
+  </div>
+
+  <!-- ── ONBOARDING ── -->
+  <div class="api-group">
+    <div class="api-group-title">Onboarding</div>
+    <table class="api-table">
+      <tr>
+        <td style="width:80px"><span class="method m-post">POST</span></td>
+        <td class="ep-path" style="width:160px">/onboarding</td>
+        <td class="ep-desc">Submit jawaban → generate budget plan pertama</td>
+      </tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// Request body</span>
+{
+  <span class="json-key">"income"</span>: <span class="json-num">8000000</span>,
+  <span class="json-key">"housing_type"</span>: <span class="json-str">"kpr"</span>,           <span class="json-comment">// kosan | kpr | keluarga</span>
+  <span class="json-key">"goal"</span>: <span class="json-str">"bebas_utang"</span>,            <span class="json-comment">// emergency | debt | goal | invest | balance</span>
+  <span class="json-key">"debt_types"</span>: [<span class="json-str">"cc"</span>, <span class="json-str">"paylater"</span>], <span class="json-comment">// none | cc | paylater | multi</span>
+  <span class="json-key">"emergency_months"</span>: <span class="json-num">1</span>,           <span class="json-comment">// 0 | 1 | 3 | 6</span>
+  <span class="json-key">"lifestyle_style"</span>: <span class="json-str">"balanced"</span>,   <span class="json-comment">// easy | balanced | strict</span>
+  <span class="json-key">"expense_items"</span>: [
+    { <span class="json-key">"name"</span>: <span class="json-str">"Sewa kosan"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🏠"</span>, <span class="json-key">"type"</span>: <span class="json-str">"fixed"</span>, <span class="json-key">"amount"</span>: <span class="json-num">1200000</span>, <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span> },
+    { <span class="json-key">"name"</span>: <span class="json-str">"Cicilan KPR"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🏗"</span>, <span class="json-key">"type"</span>: <span class="json-str">"fixed"</span>, <span class="json-key">"amount"</span>: <span class="json-num">1500000</span>, <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span> },
+    { <span class="json-key">"name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🍱"</span>, <span class="json-key">"type"</span>: <span class="json-str">"variable"</span>, <span class="json-key">"amount"</span>: <span class="json-num">1200000</span>, <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span> },
+    { <span class="json-key">"name"</span>: <span class="json-str">"Kartu kredit"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"💳"</span>, <span class="json-key">"type"</span>: <span class="json-str">"debt"</span>, <span class="json-key">"amount"</span>: <span class="json-num">400000</span>, <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span> }
+  ]
+}
+
+<span class="json-comment">// 201 Response</span>
+{
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"program"</span>: <span class="json-str">"bebas_utang"</span>,
+    <span class="json-key">"budget_plan_id"</span>: <span class="json-str">"uuid-plan"</span>,
+    <span class="json-key">"period"</span>: <span class="json-str">"2026-04"</span>,
+    <span class="json-key">"total_income"</span>: <span class="json-num">8000000</span>,
+    <span class="json-key">"summary"</span>: {
+      <span class="json-key">"kebutuhan"</span>: { <span class="json-key">"amount"</span>: <span class="json-num">4500000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">56.25</span> },
+      <span class="json-key">"utang"</span>:     { <span class="json-key">"amount"</span>: <span class="json-num">400000</span>,  <span class="json-key">"percentage"</span>: <span class="json-num">5.00</span>  },
+      <span class="json-key">"keinginan"</span>: { <span class="json-key">"amount"</span>: <span class="json-num">500000</span>,  <span class="json-key">"percentage"</span>: <span class="json-num">6.25</span>  },
+      <span class="json-key">"tabungan"</span>:  { <span class="json-key">"amount"</span>: <span class="json-num">2600000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">32.50</span> }
+    },
+    <span class="json-key">"items"</span>: [
+      { <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"category_name"</span>: <span class="json-str">"Sewa kosan"</span>, <span class="json-key">"type"</span>: <span class="json-str">"fixed"</span>, <span class="json-key">"allocated_amount"</span>: <span class="json-num">1200000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">15.0</span> }
+    ],
+    <span class="json-key">"warning"</span>: <span class="json-str">"Kebutuhan pokok 56% — sedikit di atas ideal (50%), wajar untuk kondisimu."</span>
+  }
+}</div>
+  </div>
+
+  <!-- ── PROFILE ── -->
+  <div class="api-group">
+    <div class="api-group-title">Profile</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:200px">/profile</td><td class="ep-desc">Get profil user</td></tr>
+      <tr><td><span class="method m-patch">PATCH</span></td><td class="ep-path">/profile</td><td class="ep-desc">Update lifestyle style, emergency months</td></tr>
+      <tr><td><span class="method m-put">PUT</span></td><td class="ep-path">/profile/income</td><td class="ep-desc">Update income — dienkripsi di server</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /profile — 200 Response</span>
+{ <span class="json-key">"data"</span>: { <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"income_hint"</span>: <span class="json-str">"Rp 8jt"</span>, <span class="json-key">"housing_type"</span>: <span class="json-str">"kpr"</span>,
+    <span class="json-key">"lifestyle_style"</span>: <span class="json-str">"balanced"</span>, <span class="json-key">"emergency_months"</span>: <span class="json-num">1</span>,
+    <span class="json-key">"active_program"</span>: <span class="json-str">"bebas_utang"</span>, <span class="json-key">"onboarding_done"</span>: <span class="json-num">true</span> } }
+
+<span class="json-comment">// PATCH /profile — Request body</span>
+{ <span class="json-key">"lifestyle_style"</span>: <span class="json-str">"strict"</span>, <span class="json-key">"emergency_months"</span>: <span class="json-num">3</span> }
+
+<span class="json-comment">// PUT /profile/income — Request body</span>
+{ <span class="json-key">"income"</span>: <span class="json-num">9000000</span> }
+
+<span class="json-comment">// PUT /profile/income — 200 Response (income asli TIDAK pernah dikembalikan)</span>
+{ <span class="json-key">"data"</span>: { <span class="json-key">"income_hint"</span>: <span class="json-str">"Rp 9jt"</span> } }</div>
+  </div>
+
+  <!-- ── BUDGET ── -->
+  <div class="api-group">
+    <div class="api-group-title">Budget</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:220px">/budget/current</td><td class="ep-desc">Budget plan bulan ini + status fatigue tiap item</td></tr>
+      <tr><td><span class="method m-get">GET</span></td><td class="ep-path">/budget/{year}/{month}</td><td class="ep-desc">Budget plan bulan tertentu (histori)</td></tr>
+      <tr><td><span class="method m-patch">PATCH</span></td><td class="ep-path">/budget/items/{id}</td><td class="ep-desc">Update alokasi satu budget item</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /budget/current — 200 Response</span>
+{
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"id"</span>: <span class="json-str">"uuid-plan"</span>, <span class="json-key">"period"</span>: <span class="json-str">"2026-04"</span>, <span class="json-key">"program"</span>: <span class="json-str">"bebas_utang"</span>, <span class="json-key">"total_income"</span>: <span class="json-num">8000000</span>,
+    <span class="json-key">"items"</span>: [
+      {
+        <span class="json-key">"id"</span>: <span class="json-str">"uuid-item"</span>, <span class="json-key">"category_name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"category_icon"</span>: <span class="json-str">"🍱"</span>, <span class="json-key">"type"</span>: <span class="json-str">"variable"</span>,
+        <span class="json-key">"allocated_amount"</span>: <span class="json-num">1200000</span>, <span class="json-key">"spent_amount"</span>: <span class="json-num">980000</span>,
+        <span class="json-key">"percentage_used"</span>: <span class="json-num">81.67</span>, <span class="json-key">"status"</span>: <span class="json-str">"warning"</span>, <span class="json-key">"remaining"</span>: <span class="json-num">220000</span>
+      }
+    ],
+    <span class="json-key">"summary"</span>: { <span class="json-key">"total_allocated"</span>: <span class="json-num">8000000</span>, <span class="json-key">"total_spent"</span>: <span class="json-num">3640000</span>, <span class="json-key">"overall_percentage"</span>: <span class="json-num">45.5</span> }
+  }
+}
+
+<span class="json-comment">// PATCH /budget/items/{id} — Request body</span>
+{ <span class="json-key">"allocated_amount"</span>: <span class="json-num">1500000</span> }</div>
+  </div>
+
+  <!-- ── CATEGORIES ── -->
+  <div class="api-group">
+    <div class="api-group-title">Categories</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:220px">/categories</td><td class="ep-desc">List system default + custom user</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/categories</td><td class="ep-desc">Buat kategori custom</td></tr>
+      <tr><td><span class="method m-del">DEL</span></td><td class="ep-path">/categories/{id}</td><td class="ep-desc">Hapus kategori custom — 403 jika system default</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /categories — 200 Response</span>
+{ <span class="json-key">"data"</span>: [
+  { <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🍱"</span>, <span class="json-key">"type"</span>: <span class="json-str">"variable"</span>, <span class="json-key">"is_default"</span>: <span class="json-num">true</span>  },
+  { <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"name"</span>: <span class="json-str">"Gym"</span>,           <span class="json-key">"icon"</span>: <span class="json-str">"🏋"</span>, <span class="json-key">"type"</span>: <span class="json-str">"want"</span>,     <span class="json-key">"is_default"</span>: <span class="json-num">false</span> }
+] }
+
+<span class="json-comment">// POST /categories — Request body</span>
+{ <span class="json-key">"name"</span>: <span class="json-str">"Gym membership"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🏋"</span>, <span class="json-key">"type"</span>: <span class="json-str">"want"</span> }</div>
+  </div>
+
+  <!-- ── TRANSACTIONS ── -->
+  <div class="api-group">
+    <div class="api-group-title">Transactions</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:240px">/transactions</td><td class="ep-desc">List dengan filter: ?month, category_id, type, page, per_page</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/transactions</td><td class="ep-desc">Catat transaksi manual</td></tr>
+      <tr><td><span class="method m-patch">PATCH</span></td><td class="ep-path">/transactions/{id}</td><td class="ep-desc">Edit amount, note, category_id, tanggal</td></tr>
+      <tr><td><span class="method m-del">DEL</span></td><td class="ep-path">/transactions/{id}</td><td class="ep-desc">Hapus transaksi</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/transactions/scan</td><td class="ep-desc">Foto struk → AI kategorisasi (belum tersimpan, perlu konfirmasi)</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /transactions — 200 Response</span>
+{ <span class="json-key">"data"</span>: [{
+  <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"category_name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"category_icon"</span>: <span class="json-str">"🍱"</span>, <span class="json-key">"category_type"</span>: <span class="json-str">"variable"</span>,
+  <span class="json-key">"amount"</span>: <span class="json-num">45000</span>, <span class="json-key">"note"</span>: <span class="json-str">"GrabFood siang"</span>, <span class="json-key">"ai_categorized"</span>: <span class="json-num">true</span>, <span class="json-key">"ai_confidence"</span>: <span class="json-num">0.97</span>,
+  <span class="json-key">"transacted_at"</span>: <span class="json-str">"2026-04-23T12:30:00Z"</span>
+}], <span class="json-key">"meta"</span>: { <span class="json-key">"total"</span>: <span class="json-num">47</span>, <span class="json-key">"page"</span>: <span class="json-num">1</span>, <span class="json-key">"per_page"</span>: <span class="json-num">20</span> } }
+
+<span class="json-comment">// POST /transactions — Request body</span>
+{ <span class="json-key">"amount"</span>: <span class="json-num">45000</span>, <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"note"</span>: <span class="json-str">"Makan siang"</span>, <span class="json-key">"transacted_at"</span>: <span class="json-str">"2026-04-23T12:30:00Z"</span> }
+
+<span class="json-comment">// POST /transactions — 201 Response (termasuk fatigue_alert jika status berubah)</span>
+{
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"amount"</span>: <span class="json-num">45000</span>, <span class="json-key">"category_name"</span>: <span class="json-str">"Makan & minum"</span>,
+    <span class="json-key">"fatigue_alert"</span>: {
+      <span class="json-key">"status"</span>: <span class="json-str">"warning"</span>, <span class="json-key">"category_name"</span>: <span class="json-str">"Makan & minum"</span>,
+      <span class="json-key">"percentage_used"</span>: <span class="json-num">66.5</span>, <span class="json-key">"message"</span>: <span class="json-str">"Budget makan sudah 66.5% — mulai hati-hati."</span>
+    }
+  }
+}
+
+<span class="json-comment">// POST /transactions/scan — multipart/form-data: field "image"</span>
+<span class="json-comment">// 200 Response (belum tersimpan — user perlu konfirmasi)</span>
+{
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"amount"</span>: <span class="json-num">45000</span>, <span class="json-key">"suggested_category_id"</span>: <span class="json-str">"uuid"</span>,
+    <span class="json-key">"suggested_category_name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"note"</span>: <span class="json-str">"GrabFood"</span>,
+    <span class="json-key">"confidence"</span>: <span class="json-num">0.94</span>, <span class="json-key">"receipt_url"</span>: <span class="json-str">"https://storage.supabase.co/.../receipt.jpg"</span>,
+    <span class="json-key">"alternatives"</span>: [{ <span class="json-key">"category_name"</span>: <span class="json-str">"Hiburan"</span>, <span class="json-key">"confidence"</span>: <span class="json-num">0.04</span> }]
+  }
+}</div>
+  </div>
+
+  <!-- ── FATIGUE ── -->
+  <div class="api-group">
+    <div class="api-group-title">Fatigue Dashboard</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:240px">/fatigue</td><td class="ep-desc">Status fatigue semua kategori bulan ini + tip kontekstual</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /fatigue — 200 Response</span>
+{
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"period"</span>: <span class="json-str">"2026-04"</span>, <span class="json-key">"day_of_month"</span>: <span class="json-num">23</span>, <span class="json-key">"days_remaining"</span>: <span class="json-num">7</span>,
+    <span class="json-key">"categories"</span>: [
+      {
+        <span class="json-key">"category_name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"category_icon"</span>: <span class="json-str">"🍱"</span>, <span class="json-key">"type"</span>: <span class="json-str">"variable"</span>,
+        <span class="json-key">"allocated"</span>: <span class="json-num">1200000</span>, <span class="json-key">"spent"</span>: <span class="json-num">1020000</span>, <span class="json-key">"remaining"</span>: <span class="json-num">180000</span>,
+        <span class="json-key">"percentage"</span>: <span class="json-num">85.0</span>, <span class="json-key">"status"</span>: <span class="json-str">"fatigued"</span>,
+        <span class="json-key">"daily_budget_remaining"</span>: <span class="json-num">25714</span>,
+        <span class="json-key">"tip"</span>: <span class="json-str">"Budget makan fatigued. Masak sendiri 3 hari ke depan bisa hemat ±Rp 120rb."</span>
+      },
+      {
+        <span class="json-key">"category_name"</span>: <span class="json-str">"Hiburan"</span>, <span class="json-key">"type"</span>: <span class="json-str">"want"</span>,
+        <span class="json-key">"allocated"</span>: <span class="json-num">500000</span>, <span class="json-key">"spent"</span>: <span class="json-num">120000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">24.0</span>,
+        <span class="json-key">"status"</span>: <span class="json-str">"fresh"</span>, <span class="json-key">"tip"</span>: <span class="json-num">null</span>
+      }
+    ],
+    <span class="json-key">"overall"</span>: {
+      <span class="json-key">"total_spent"</span>: <span class="json-num">3640000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">45.5</span>,
+      <span class="json-key">"projected_end_of_month"</span>: <span class="json-num">4755652</span>, <span class="json-key">"on_track"</span>: <span class="json-num">true</span>
+    }
+  }
+}</div>
+  </div>
+
+  <!-- ── DEBTS ── -->
+  <div class="api-group">
+    <div class="api-group-title">Debts</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:240px">/debts</td><td class="ep-desc">List utang aktif + estimasi pelunasan</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/debts</td><td class="ep-desc">Tambah utang baru</td></tr>
+      <tr><td><span class="method m-patch">PATCH</span></td><td class="ep-path">/debts/{id}</td><td class="ep-desc">Update info utang</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/debts/{id}/payment</td><td class="ep-desc">Catat pembayaran → update current_balance + recalculate payoff</td></tr>
+      <tr><td><span class="method m-del">DEL</span></td><td class="ep-path">/debts/{id}</td><td class="ep-desc">Soft delete (is_active = false)</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /debts — 200 Response</span>
+{ <span class="json-key">"data"</span>: {
+  <span class="json-key">"method"</span>: <span class="json-str">"snowball"</span>,
+  <span class="json-key">"items"</span>: [{
+    <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"name"</span>: <span class="json-str">"Kartu Kredit BCA"</span>,
+    <span class="json-key">"total_amount"</span>: <span class="json-num">20000000</span>, <span class="json-key">"current_balance"</span>: <span class="json-num">18500000</span>,
+    <span class="json-key">"interest_rate"</span>: <span class="json-num">36.00</span>, <span class="json-key">"min_payment"</span>: <span class="json-num">555000</span>,
+    <span class="json-key">"priority"</span>: <span class="json-num">1</span>, <span class="json-key">"is_focus"</span>: <span class="json-num">true</span>,
+    <span class="json-key">"estimated_payoff_months"</span>: <span class="json-num">14</span>, <span class="json-key">"monthly_payment"</span>: <span class="json-num">1200000</span>
+  }]
+} }
+
+<span class="json-comment">// POST /debts — Request body</span>
+{ <span class="json-key">"name"</span>: <span class="json-str">"Kredivo"</span>, <span class="json-key">"category_id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"total_amount"</span>: <span class="json-num">3000000</span>,
+  <span class="json-key">"current_balance"</span>: <span class="json-num">3000000</span>, <span class="json-key">"interest_rate"</span>: <span class="json-num">26.00</span>, <span class="json-key">"min_payment"</span>: <span class="json-num">300000</span>,
+  <span class="json-key">"method"</span>: <span class="json-str">"snowball"</span>, <span class="json-key">"started_at"</span>: <span class="json-str">"2026-01-01"</span> }
+
+<span class="json-comment">// POST /debts/{id}/payment — Request body</span>
+{ <span class="json-key">"amount"</span>: <span class="json-num">1200000</span>, <span class="json-key">"paid_at"</span>: <span class="json-str">"2026-04-23"</span>, <span class="json-key">"note"</span>: <span class="json-str">"Bayar CC April"</span> }
+
+<span class="json-comment">// POST /debts/{id}/payment — 200 Response</span>
+{ <span class="json-key">"data"</span>: { <span class="json-key">"previous_balance"</span>: <span class="json-num">18500000</span>, <span class="json-key">"payment_amount"</span>: <span class="json-num">1200000</span>,
+  <span class="json-key">"current_balance"</span>: <span class="json-num">17300000</span>, <span class="json-key">"estimated_payoff_months"</span>: <span class="json-num">12</span>, <span class="json-key">"is_paid_off"</span>: <span class="json-num">false</span> } }</div>
+  </div>
+
+  <!-- ── GOALS ── -->
+  <div class="api-group">
+    <div class="api-group-title">Goals</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:240px">/goals</td><td class="ep-desc">List goals + progress + estimasi bulan tercapai</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/goals</td><td class="ep-desc">Buat goal baru</td></tr>
+      <tr><td><span class="method m-patch">PATCH</span></td><td class="ep-path">/goals/{id}</td><td class="ep-desc">Update nama, target, deadline</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/goals/{id}/deposit</td><td class="ep-desc">Tambah progress + milestone message</td></tr>
+      <tr><td><span class="method m-del">DEL</span></td><td class="ep-path">/goals/{id}</td><td class="ep-desc">Hapus goal</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /goals — 200 Response</span>
+{ <span class="json-key">"data"</span>: [{
+  <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"name"</span>: <span class="json-str">"Dana Darurat"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🛡"</span>,
+  <span class="json-key">"target_amount"</span>: <span class="json-num">24000000</span>, <span class="json-key">"current_amount"</span>: <span class="json-num">4500000</span>,
+  <span class="json-key">"percentage"</span>: <span class="json-num">18.75</span>, <span class="json-key">"estimated_months"</span>: <span class="json-num">10</span>,
+  <span class="json-key">"monthly_needed"</span>: <span class="json-num">1958333</span>, <span class="json-key">"is_primary"</span>: <span class="json-num">true</span>
+}] }
+
+<span class="json-comment">// POST /goals — Request body</span>
+{ <span class="json-key">"name"</span>: <span class="json-str">"DP Rumah"</span>, <span class="json-key">"icon"</span>: <span class="json-str">"🏠"</span>, <span class="json-key">"target_amount"</span>: <span class="json-num">50000000</span>,
+  <span class="json-key">"target_date"</span>: <span class="json-str">"2027-12-01"</span>, <span class="json-key">"is_primary"</span>: <span class="json-num">false</span> }
+
+<span class="json-comment">// POST /goals/{id}/deposit — Request body</span>
+{ <span class="json-key">"amount"</span>: <span class="json-num">500000</span>, <span class="json-key">"note"</span>: <span class="json-str">"Sisa gaji April"</span> }
+
+<span class="json-comment">// POST /goals/{id}/deposit — 200 Response</span>
+{ <span class="json-key">"data"</span>: { <span class="json-key">"current_amount"</span>: <span class="json-num">5000000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">20.83</span>,
+  <span class="json-key">"milestone_message"</span>: <span class="json-str">"Sudah 20% — terus semangat!"</span> } }</div>
+  </div>
+
+  <!-- ── REPORTS ── -->
+  <div class="api-group">
+    <div class="api-group-title">Reports</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:280px">/reports/weekly</td><td class="ep-desc">Weekly report minggu ini + narasi AI + vs minggu lalu</td></tr>
+      <tr><td><span class="method m-get">GET</span></td><td class="ep-path">/reports/monthly/{year}/{month}</td><td class="ep-desc">Ringkasan bulanan + saving rate + breakdown per tipe</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /reports/weekly — 200 Response</span>
+{ <span class="json-key">"data"</span>: {
+  <span class="json-key">"week_start"</span>: <span class="json-str">"2026-04-20"</span>, <span class="json-key">"week_end"</span>: <span class="json-str">"2026-04-26"</span>,
+  <span class="json-key">"total_spent"</span>: <span class="json-num">680000</span>, <span class="json-key">"on_track"</span>: <span class="json-num">true</span>,
+  <span class="json-key">"narrative"</span>: <span class="json-str">"Minggu ini kamu hemat Rp 80rb dibanding minggu lalu. Pengeluaran terbesar ada di makan — tapi masih dalam batas aman."</span>,
+  <span class="json-key">"top_categories"</span>: [
+    { <span class="json-key">"category_name"</span>: <span class="json-str">"Makan & minum"</span>, <span class="json-key">"amount"</span>: <span class="json-num">380000</span>, <span class="json-key">"percentage_of_weekly"</span>: <span class="json-num">55.9</span> }
+  ],
+  <span class="json-key">"vs_last_week"</span>: { <span class="json-key">"difference"</span>: <span class="json-num">-80000</span>, <span class="json-key">"percentage_change"</span>: <span class="json-num">-10.5</span>, <span class="json-key">"better"</span>: <span class="json-num">true</span> }
+} }
+
+<span class="json-comment">// GET /reports/monthly/{year}/{month} — 200 Response</span>
+{ <span class="json-key">"data"</span>: {
+  <span class="json-key">"period"</span>: <span class="json-str">"2026-03"</span>, <span class="json-key">"total_income"</span>: <span class="json-num">8000000</span>,
+  <span class="json-key">"total_spent"</span>: <span class="json-num">5420000</span>, <span class="json-key">"saving_rate"</span>: <span class="json-num">32.25</span>,
+  <span class="json-key">"breakdown"</span>: {
+    <span class="json-key">"fixed"</span>:    { <span class="json-key">"allocated"</span>: <span class="json-num">2700000</span>, <span class="json-key">"spent"</span>: <span class="json-num">2700000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">100</span>  },
+    <span class="json-key">"variable"</span>: { <span class="json-key">"allocated"</span>: <span class="json-num">1800000</span>, <span class="json-key">"spent"</span>: <span class="json-num">1650000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">91.7</span> },
+    <span class="json-key">"debt"</span>:     { <span class="json-key">"allocated"</span>: <span class="json-num">1200000</span>, <span class="json-key">"spent"</span>: <span class="json-num">1200000</span>, <span class="json-key">"percentage"</span>: <span class="json-num">100</span>  },
+    <span class="json-key">"want"</span>:     { <span class="json-key">"allocated"</span>: <span class="json-num">500000</span>,  <span class="json-key">"spent"</span>: <span class="json-num">470000</span>,  <span class="json-key">"percentage"</span>: <span class="json-num">94</span>   }
+  },
+  <span class="json-key">"personal_record"</span>: <span class="json-num">false</span>, <span class="json-key">"previous_month_saved"</span>: <span class="json-num">2100000</span>
+} }</div>
+  </div>
+
+  <!-- ── TOKENS ── -->
+  <div class="api-group">
+    <div class="api-group-title">API Tokens — BYOA</div>
+    <table class="api-table">
+      <tr><td style="width:80px"><span class="method m-get">GET</span></td><td class="ep-path" style="width:200px">/tokens</td><td class="ep-desc">List token aktif — hint saja, bukan token asli</td></tr>
+      <tr><td><span class="method m-post">POST</span></td><td class="ep-path">/tokens</td><td class="ep-desc">Generate token baru — ditampilkan sekali saja</td></tr>
+      <tr><td><span class="method m-del">DEL</span></td><td class="ep-path">/tokens/{id}</td><td class="ep-desc">Revoke token</td></tr>
+    </table>
+    <div class="json-block"><span class="json-comment">// GET /tokens — 200 Response</span>
+{ <span class="json-key">"data"</span>: [{
+  <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"name"</span>: <span class="json-str">"Claude Desktop"</span>, <span class="json-key">"token_hint"</span>: <span class="json-str">"fnt_...a4b2"</span>,
+  <span class="json-key">"can_read"</span>: <span class="json-num">true</span>, <span class="json-key">"can_write"</span>: <span class="json-num">false</span>,
+  <span class="json-key">"last_used_at"</span>: <span class="json-str">"2026-04-22T09:00:00Z"</span>, <span class="json-key">"is_active"</span>: <span class="json-num">true</span>
+}] }
+
+<span class="json-comment">// POST /tokens — Request body</span>
+{ <span class="json-key">"name"</span>: <span class="json-str">"My LangChain Bot"</span>, <span class="json-key">"can_write"</span>: <span class="json-num">true</span>, <span class="json-key">"expires_at"</span>: <span class="json-num">null</span> }
+
+<span class="json-comment">// POST /tokens — 201 Response (token asli hanya muncul SEKALI)</span>
+{ <span class="json-key">"data"</span>: {
+  <span class="json-key">"id"</span>: <span class="json-str">"uuid"</span>, <span class="json-key">"name"</span>: <span class="json-str">"My LangChain Bot"</span>,
+  <span class="json-key">"token"</span>: <span class="json-str">"fnt_live_a8x2kp9mNqR3vL7wZbQs..."</span>,
+  <span class="json-key">"token_hint"</span>: <span class="json-str">"...bQs"</span>,
+  <span class="json-key">"warning"</span>: <span class="json-str">"Simpan token ini sekarang. Tidak akan ditampilkan lagi."</span>
+} }</div>
+  </div>
+
+  <div class="callout blue">
+    <p><strong>Total: 25 endpoint</strong> · Semua butuh JWT kecuali GET /health · Amount selalu integer Rupiah · income tidak pernah keluar dari server dalam bentuk plaintext · Token asli hanya muncul sekali saat dibuat</p>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<div class="doc-footer">
+  <span>Fintrack — Product & Technical Document v1.0</span>
+  <span>April 2026 · Konfidensial</span>
+</div>
+
+</body>
+</html>
