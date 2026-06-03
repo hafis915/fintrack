@@ -80,11 +80,15 @@ func NewTestServer(t *testing.T) *TestServer {
 	}
 
 	log := logger.New(cfg.LogLevel)
-	e := server.New(server.Deps{
+	e, err := server.New(server.Deps{
 		Config: cfg,
 		Logger: log,
 		DB:     pool,
 	})
+	if err != nil {
+		pool.Close()
+		t.Fatalf("building test server: %v", err)
+	}
 
 	return &TestServer{Echo: e, DB: pool, Config: cfg}
 }

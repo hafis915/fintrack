@@ -13,7 +13,10 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/hafis915/fintrack/internal/config"
+	"github.com/hafis915/fintrack/internal/encryption"
+	"github.com/hafis915/fintrack/internal/handler"
 	"github.com/hafis915/fintrack/internal/middleware"
+	"github.com/hafis915/fintrack/internal/repository"
 	"github.com/hafis915/fintrack/pkg/responses"
 )
 
@@ -26,8 +29,28 @@ type Deps struct {
 }
 
 // New returns a configured Echo instance with global middleware mounted
-// and the public + protected route groups registered.
-func New(d Deps) *echo.Echo {
+// and the public + protected route groups registered. Returns an error if
+// any upstream dependency (today: only the income cipher) fails to construct.
+func New(d Deps) (*echo.Echo, error) {
+	cipher, err := encryption.NewCipherFromHex(d.Config.IncomeEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("building income cipher: %w", err)
+	}
+
+	users := repository.NewUsersRepo(d.DB)
+	userProfiles := repository.NewUserProfilesRepo(d.DB)
+	categories := repository.NewCategoriesRepo(d.DB)
+	budgetPlans := repository.NewBudgetPlansRepo(d.DB)
+
+	onboarding := handler.NewOnboarding(handler.OnboardingDeps{
+		Users:        users,
+		UserProfiles: userProfiles,
+		Categories:   categories,
+		BudgetPlans:  budgetPlans,
+		Cipher:       cipher,
+	})
+	categoriesHandler := handler.NewCategories(categories)
+
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -49,8 +72,10 @@ func New(d Deps) *echo.Echo {
 	// Protected routes live under /v1 and require a valid JWT.
 	v1 := e.Group("/v1", middleware.JWTAuth(d.Config.JWTSecret))
 	v1.GET("/me", meHandler())
+	v1.POST("/onboarding", onboarding.Handle)
+	v1.GET("/categories", categoriesHandler.List)
 
-	return e
+	return e, nil
 }
 
 // healthHandler reports app + DB readiness. Used by Railway, load balancers,

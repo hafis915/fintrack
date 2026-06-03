@@ -45,11 +45,14 @@ func run() error {
 	}
 	log.Info().Msg("connected to postgres")
 
-	e := server.New(server.Deps{
+	e, err := server.New(server.Deps{
 		Config: cfg,
 		Logger: log,
 		DB:     pool,
 	})
+	if err != nil {
+		return fmt.Errorf("building server: %w", err)
+	}
 
 	addr := fmt.Sprintf("%s:%d", cfg.HTTPHost, cfg.HTTPPort)
 	srv := &http.Server{
