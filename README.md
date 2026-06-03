@@ -8,9 +8,14 @@ Indonesian-native mobile-first PWA. Currently in pre-development. Built solo by 
 
 ## Status
 
-**Pre-development.** Planning artifacts complete, no code yet. Phase 0 (repo skeleton, hello world) is next.
+**Phase 0 done (2026-06-03).** Repo skeleton + hello world:
 
-This repo was reset on 2026-06-03 to align with the planning trail. Prior commit history is preserved under the `pre-vault-reset` tag.
+- Go backend on Echo with `/health` (public) and `/v1/me` (JWT-protected)
+- Vue 3 + Vite + Tailwind frontend rendering `/health` status
+- Postgres + MinIO via `docker compose`
+- `cmd/mint-jwt` for local-only token issuance ([ADR-014](./DECISIONS.md))
+
+Prior pre-vault-reset commit history is preserved under the `pre-vault-reset` tag.
 
 ## What This Is
 
@@ -42,15 +47,27 @@ Additional planning lives in the author's Obsidian vault (`Hafis-Brain/03 Projec
 
 ## Local Development
 
-Coming in Phase 0. The stack will require:
+Requires Go 1.22+, Node 20+, Docker, `sqlc`, and `golang-migrate`. No external accounts during MVP (see [ADR-014](./DECISIONS.md)).
 
-- Go 1.22+
-- Node 20+ (for the Vue frontend)
-- Docker (for local MinIO storage)
-- Supabase account (DB + Auth)
-- Anthropic API key (Claude Vision)
+```bash
+# 1. secrets
+cp .env.example .env
+# replace JWT_SECRET + INCOME_ENCRYPTION_KEY with: openssl rand -hex 32
 
-Setup instructions will be added once Phase 0 is complete.
+# 2. dependencies (postgres on :55432 to avoid clashing with host postgres)
+make up
+make migrate
+
+# 3. run
+make api       # backend on :8080
+make web       # frontend on :5173 (in another shell)
+
+# 4. mint a test JWT and hit a protected route
+TOKEN=$(make token | tail -1)
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/v1/me
+```
+
+See `make help` for the full target list.
 
 ## Goals & Non-Goals
 

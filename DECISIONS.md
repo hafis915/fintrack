@@ -261,6 +261,37 @@ ADR-style log. One entry per decision. Don't edit past decisions — add new one
 
 ---
 
+---
+
+## ADR-014 — Local Postgres + locally-minted JWTs for MVP (Supabase deferred) (2026-06-03)
+
+**Decision:** During MVP development, run a plain `postgres:16` container in `docker-compose.yml` and mint JWTs locally via a `cmd/mint-jwt` helper signed with a static `JWT_SECRET` from `.env`. No Supabase account, no Supabase CLI, no Supabase SDK in the Go code. RLS policies are still implemented (RLS is a vanilla Postgres feature).
+
+**Why:**
+- Hafis's stated learning goal (ADR-002, ADR-012) is *production Go patterns + AI orchestration*, not "learn the Supabase ecosystem"
+- Zero external accounts / signup friction for the entire MVP build — every dependency is local Docker
+- Identical Go code path to future Supabase JWTs: the auth middleware just validates against a secret/issuer; it doesn't care who signed the token
+- Forces Hafis to actually understand how JWT validation and RLS work, rather than letting Supabase Auth obscure it
+
+**Trade-off:**
+- Manual JWT minting for test users (one CLI command) instead of a hosted sign-up flow
+- No Supabase Studio UI for browsing data — use `psql` or TablePlus
+- Storage layer still uses MinIO locally (already planned, so no change)
+
+**Alternatives considered:**
+- Supabase CLI local stack (`supabase start`) — rejected as too much magic for a learning project; ~6 containers running, Supabase-specific CLI quirks to learn
+- Skip auth entirely until production — rejected because the JWT middleware is core scaffolding that the rest of the app builds on
+
+**Migration to real Supabase later:**
+- Create Supabase project + run existing migrations against it
+- Change `DATABASE_URL`, `JWT_SECRET` (to Supabase JWT secret), and `JWT_ISSUER` in `.env`
+- Replace `cmd/mint-jwt` usage with Supabase Auth signup/login
+- No Go code changes expected outside config
+
+**Supersedes:** No prior ADR. Refines the Supabase plan in ADR-007 — Supabase is still the production target, just deferred until after personal validation.
+
+---
+
 ## Decision Template (for future entries)
 
 ```

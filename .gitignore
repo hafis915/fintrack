@@ -28,6 +28,7 @@ coverage/
 # Build outputs
 build/
 out/
+bin/
 
 # IDE / Editor
 .idea/
@@ -59,3 +60,9 @@ coverage.html
 
 # Claude Code
 .claude/local-state.json
+
+# Playwright
+web/test-results/
+web/playwright-report/
+web/blob-report/
+web/playwright/.cache/
