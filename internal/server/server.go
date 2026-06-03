@@ -42,6 +42,7 @@ func New(d Deps) (*echo.Echo, error) {
 	categories := repository.NewCategoriesRepo(d.DB)
 	budgetPlans := repository.NewBudgetPlansRepo(d.DB)
 	transactionsRepo := repository.NewTransactionsRepo(d.DB)
+	fatigueRepo := repository.NewFatigueRepo(d.DB)
 
 	onboarding := handler.NewOnboarding(handler.OnboardingDeps{
 		Users:        users,
@@ -52,6 +53,7 @@ func New(d Deps) (*echo.Echo, error) {
 	})
 	categoriesHandler := handler.NewCategories(categories)
 	transactionsHandler := handler.NewTransactions(transactionsRepo, categories)
+	budgetHandler := handler.NewBudget(fatigueRepo)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -84,6 +86,7 @@ func New(d Deps) (*echo.Echo, error) {
 	v1.GET("/transactions/:id", transactionsHandler.Get)
 	v1.PATCH("/transactions/:id", transactionsHandler.Update)
 	v1.DELETE("/transactions/:id", transactionsHandler.Delete)
+	v1.GET("/budget/current", budgetHandler.Current)
 
 	return e, nil
 }
