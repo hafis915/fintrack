@@ -1,10 +1,11 @@
 import { execSync } from 'node:child_process'
 
-// Wipes the onboarding-related tables in fintrack_test so each e2e spec
-// starts from a known baseline. System default categories are NOT touched
-// (they come from the migration seed and the API relies on them).
+// Wipes all per-user tables in fintrack_test so each e2e spec starts from a
+// known baseline. System default categories are NOT touched (they come from
+// the migration seed and the API relies on them).
 export function resetOnboardingDB() {
   const sql = [
+    'delete from transactions;',
     'delete from budget_items;',
     'delete from budget_plans;',
     'delete from user_profiles;',

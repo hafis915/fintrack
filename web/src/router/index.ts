@@ -16,6 +16,11 @@ const routes: RouteRecordRaw[] = [
     name: 'onboarding-result',
     component: () => import('@/views/OnboardingResultView.vue'),
   },
+  {
+    path: '/transactions',
+    name: 'transactions',
+    component: () => import('@/views/TransactionsView.vue'),
+  },
 ]
 
 export const router = createRouter({
