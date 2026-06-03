@@ -41,6 +41,7 @@ func New(d Deps) (*echo.Echo, error) {
 	userProfiles := repository.NewUserProfilesRepo(d.DB)
 	categories := repository.NewCategoriesRepo(d.DB)
 	budgetPlans := repository.NewBudgetPlansRepo(d.DB)
+	transactionsRepo := repository.NewTransactionsRepo(d.DB)
 
 	onboarding := handler.NewOnboarding(handler.OnboardingDeps{
 		Users:        users,
@@ -50,6 +51,7 @@ func New(d Deps) (*echo.Echo, error) {
 		Cipher:       cipher,
 	})
 	categoriesHandler := handler.NewCategories(categories)
+	transactionsHandler := handler.NewTransactions(transactionsRepo, categories)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -69,11 +71,19 @@ func New(d Deps) (*echo.Echo, error) {
 	// Public routes (no auth).
 	e.GET("/health", healthHandler(d))
 
-	// Protected routes live under /v1 and require a valid JWT.
-	v1 := e.Group("/v1", middleware.JWTAuth(d.Config.JWTSecret))
+	// Protected routes live under /v1 and require a valid JWT + a bootstrapped users row.
+	v1 := e.Group("/v1",
+		middleware.JWTAuth(d.Config.JWTSecret),
+		middleware.EnsureUser(users),
+	)
 	v1.GET("/me", meHandler())
 	v1.POST("/onboarding", onboarding.Handle)
 	v1.GET("/categories", categoriesHandler.List)
+	v1.POST("/transactions", transactionsHandler.Create)
+	v1.GET("/transactions", transactionsHandler.List)
+	v1.GET("/transactions/:id", transactionsHandler.Get)
+	v1.PATCH("/transactions/:id", transactionsHandler.Update)
+	v1.DELETE("/transactions/:id", transactionsHandler.Delete)
 
 	return e, nil
 }
