@@ -249,6 +249,24 @@ fintrack/
 
 ---
 
+## Definition of Done
+
+A feature is **not complete** — and must not be committed to `main` — until **all** of the following hold:
+
+1. **Integration tests for every API endpoint.** Every HTTP route introduced (or modified) has at least one Go integration test that exercises the full request/response cycle through the assembled Echo handler against a **real Postgres database** (the `fintrack_test` DB, never `fintrack`). Tests live next to the code they cover (e.g. `internal/server/server_integration_test.go`) or in `test/integration/`. **Auth-protected endpoints must cover at minimum:** missing token, malformed header, invalid signature, expired token, valid token. Mocks are allowed only for outbound third-party calls (Claude/OpenRouter, MinIO/Supabase Storage) — never for the database or the Echo handler under test.
+
+2. **E2E tests for every user-facing flow.** Every flow a real user can complete (a sequence of UI actions ending in a meaningful outcome — e.g. "load home", "complete onboarding", "scan receipt and confirm") is covered by a **Playwright** test in `web/e2e/`. Tests run against the full local stack (`docker compose` services + `go run ./apps/api` + `vite dev`) — no API mocking at the network layer. Playwright's `webServer` config is the source of truth for how the stack is started.
+
+3. **Tests run green locally before commit.** Both `make test` (Go unit + integration) and `make test-e2e` (Playwright) are required gates. CI will enforce the same.
+
+4. **Test data is isolated.** Integration tests connect to `fintrack_test`; the development `fintrack` DB is never touched by tests. The test DB is reset between test packages (truncate or migrate-down/up).
+
+5. **New flows update the test matrix.** When a new API or flow is added, the relevant test file is added or extended in the **same commit/PR** as the feature. "I'll add tests later" is not acceptable.
+
+**Operationally, this means:** before claiming a feature is "done", run `make test && make test-e2e`. If either is red, the feature is not done.
+
+---
+
 ## Development Workflow
 
 ### Local dev
