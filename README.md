@@ -1,44 +1,74 @@
 # Fintrack
 
-> "Gym app for your money" — Indonesian-native personal finance PWA targeting
-> fresh workers. AI scans receipts, categorizes spending, warns when a category
-> is "fatigued," and writes a weekly narrative in Bahasa Indonesia.
+> **"Gym app for your money."** Personal finance PWA where money discipline feels like training, not bookkeeping.
 
-**Status:** Pre-implementation. Phase 0 (repo + planning artifacts) is done.
-Phase 1 (Go backend skeleton) starts next. See the planning trail below for the
-full roadmap.
+Indonesian-native mobile-first PWA. Currently in pre-development. Built solo by [@hafis915](https://github.com/hafis915) as a vibe-coding learning project — the goal is to practice planning, directing, and reviewing AI-generated code on a production-grade app.
 
-## Planning trail
+---
 
-This project is built solo with Claude Code (Opus 4.7) as the implementation
-driver. The planning artifacts are committed to the repo so the workflow is
-visible alongside the code.
+## Status
 
-- [`full_doc.html`](./full_doc.html) — Product & technical PRD (v1.0, Apr 2026).
-  Indonesian-native, includes full DB schema, 25 REST endpoints, user stories.
-- [`docs/superpowers/plans/2026-04-29-backend-mvp.md`](./docs/superpowers/plans/2026-04-29-backend-mvp.md) —
-  16-phase Go backend implementation plan, ~3,400 lines of TDD task breakdowns.
-- [`docs/superpowers/designs/2026-06-01-fintrack-portfolio-sequencing.md`](./docs/superpowers/designs/2026-06-01-fintrack-portfolio-sequencing.md) —
-  Office-hours design doc. Frames the project as a portfolio piece showcasing
-  AI-orchestrated solo development; chooses vertical-slice execution order.
-- [`docs/superpowers/reviews/reviews/2026-06-01-ceo-review.md`](./docs/superpowers/reviews/reviews/2026-06-01-ceo-review.md) —
-  CEO-mode plan review. Surfaces three gaps between the plan and the design doc;
-  locks in the inserts now applied to the plan file.
+**Pre-development.** Planning artifacts complete, no code yet. Phase 0 (repo skeleton, hello world) is next.
 
-## Tech stack (planned)
+This repo was reset on 2026-06-03 to align with the planning trail. Prior commit history is preserved under the `pre-vault-reset` tag.
 
-Go 1.22 · Echo v4 · pgx/v5 · sqlc · golang-migrate · Postgres (Supabase) ·
-Anthropic Claude API · Railway · Next.js 14 · Vercel.
+## What This Is
 
-## Roadmap (milestones, not phase numbers)
+- **Product:** Personal finance app — track spending, receipt-scan via AI, "category fatigue" dashboard, coaching narrative
+- **User #1:** Hafis. Public launch deferred until personal validation succeeds (30 days daily use + success criteria).
+- **Stack:** Go + Echo + sqlc + Supabase (backend), Vue 3 + Vite + Tailwind + shadcn-vue (frontend)
+- **AI:** Claude Vision for receipt categorization (Claude Haiku for narrative reports in v2)
 
-1. **Milestone 1** — Foundation + Railway deploy. Live URL with `/health`.
-2. **Milestone 2** — Onboarding + budget engine vertical slice.
-3. **Milestone 3** — Receipt scan + transactions + fatigue vertical slice.
-4. **Milestone 4** — Weekly narrative worker.
-5. **Milestone 5** — Debts, goals, reports, BYOA tokens (horizontal fill).
-6. **Milestone 6** — Thin Next.js frontend + portfolio-grade README + Loom demo.
+## MVP (4 features)
 
-This README will be rewritten in Milestone 6 with live URLs, architecture
-diagrams, and the embedded walkthrough. For now its only job is to explain
-that the repo isn't empty by accident.
+1. **Goal-First Onboarding** — 6-question intake → personalized budget + program selection
+2. **Transactions CRUD + manual entry** — foundation
+3. **Receipt Photo Categorization** — Claude Vision hero feature
+4. **Category Fatigue Dashboard** — Fresh / Warning / Fatigued indicators
+
+Deferred to v2: emergency fund, weekly narrative, debt tracker, BYOA agent tokens.
+
+## Documentation
+
+All planning docs live at repo root:
+
+- **[CLAUDE.md](./CLAUDE.md)** — Project context for AI coding agents. Read first.
+- **[DESIGN.md](./DESIGN.md)** — Design system. Typography, color, motion. Read before any UI work.
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Tech stack, repo structure, data flows.
+- **[DECISIONS.md](./DECISIONS.md)** — ADR log. Every non-obvious decision with rationale.
+- **[docs/prd.html](./docs/prd.html)** — Original product & technical PRD (v1.0, April 2026).
+
+Additional planning lives in the author's Obsidian vault (`Hafis-Brain/03 Projects/Fintrack/`) — status logs, roadmap checkboxes, weekly reviews.
+
+## Local Development
+
+Coming in Phase 0. The stack will require:
+
+- Go 1.22+
+- Node 20+ (for the Vue frontend)
+- Docker (for local MinIO storage)
+- Supabase account (DB + Auth)
+- Anthropic API key (Claude Vision)
+
+Setup instructions will be added once Phase 0 is complete.
+
+## Goals & Non-Goals
+
+**Goals:**
+- Learn vibe-coding: plan, direct AI, review production-grade code solo
+- Ship a working app Hafis uses daily for 30+ consecutive days
+- Build something usable enough to validate the goal-first / fatigue dashboard concept
+
+**Non-goals (for v1):**
+- Public launch / marketing
+- Monetization
+- OJK regulatory compliance
+- Multi-tenant scaling beyond user #1
+
+## License
+
+Not yet decided. Project is currently private use only.
+
+---
+
+*Built solo with Claude (Sonnet 4.5) as the implementation partner. Every commit is human-reviewed before merge.*

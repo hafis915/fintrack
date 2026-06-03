@@ -1,20 +1,61 @@
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
 # Go
-/bin
-/tmp
+vendor/
 *.test
 *.out
-coverage.*
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# Env / secrets
-.env
-*.local.env
+# Generated code (sqlc output — never hand-edit)
+internal/repository/generated/
+database/sqlc/generated/
 
-# sqlc generated
-/database/sqlc/generated
+# Node / Vue / Vite
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Build outputs
+build/
+out/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
 
 # OS
 .DS_Store
+Thumbs.db
 
-# Editor
-.idea/
-.vscode/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local dev (uploads, temp files)
+tmp/
+*.local
+
+# Docker volumes
+volumes/
+
+# Test artifacts
+coverage.txt
+coverage.html
+
+# Claude Code
+.claude/local-state.json
