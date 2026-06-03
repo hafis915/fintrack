@@ -21,6 +21,11 @@ const routes: RouteRecordRaw[] = [
     name: 'transactions',
     component: () => import('@/views/TransactionsView.vue'),
   },
+  {
+    path: '/budget',
+    name: 'budget',
+    component: () => import('@/views/BudgetView.vue'),
+  },
 ]
 
 export const router = createRouter({
