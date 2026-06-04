@@ -66,3 +66,6 @@ web/test-results/
 web/playwright-report/
 web/blob-report/
 web/playwright/.cache/
+
+# compiled mint-jwt helper binary (build artifact)
+/mint-jwt

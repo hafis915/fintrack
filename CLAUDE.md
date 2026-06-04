@@ -58,6 +58,24 @@
 
 **If a feature isn't on this list, push back when asked to build it.** Scope creep kills solo projects.
 
+### v1 scope additions (accepted 2026-06-04)
+
+These emerged during the build cycle and were approved by Hafis as the intended product flow:
+**login → onboarding → result/budget → compare spending vs budget (with graphic) → reduction recommendations.**
+
+- **Local email register/login UI + route guard** — Phase-0 local auth only. Real Supabase Auth stays deferred to v2.
+- **Beranda redesigned into a real dashboard** — snapshot + quick actions. The old API-status/health card is dev-only and removed from the user-facing home.
+- **Budget vs actual** — the budget dashboard visually compares spending to the plan (a graphic) and surfaces reduction recommendations ("what to cut"). This is an extension of the **Category Fatigue Dashboard** feature, not a new standalone feature.
+
+### v1 scope additions (accepted 2026-06-04, batch 2)
+
+Approved by Hafis; design + rationale recorded in `PLAN.md` (ADR-2026-06-04).
+
+- **Auth hardening** — register/login now require a **bcrypt password** (≥8 chars); generic 401 on bad credentials (no email-existence leak); **logout** ("Keluar") on the beranda; router guard validates JWT `exp` client-side.
+- **Responsive desktop layer** — on `≥lg`, a left sidebar nav replaces the bottom tabs and content widens (multi-column where useful). Mobile-first is unchanged. (Departs from the strict "max-width 420px" rule → see Design System note + `PLAN.md`.)
+- **Reports page (`/reports`)** — desktop-optimized spending report: **month filter**, spending-by-category table + chart, and **CSV export** of the selected month's transactions.
+- **Month filter** on the Transactions list (date-range, via the existing `from`/`to` API params).
+
 ---
 
 ## Hafis's Learning Goals (PRIMARY)
@@ -357,7 +375,7 @@ All font choices, colors, spacing, motion, and aesthetic direction are defined t
 - Semantic colors: green (Fresh) / amber (Warning) / coral (Fatigued) — **ONLY for state, never decoration**
 - Hero numbers: typographic composition (mono digits + saffron Rp + muted decimals), not just "big bold white text"
 - Both dark and light modes must be tested
-- Mobile-first, single column max-width 420px, bottom tab nav
+- Mobile-first, single column max-width 420px, bottom tab nav — **on mobile**. (See ADR-2026-06-04 / `PLAN.md`: desktop (≥`lg`) now ADDS a responsive layer — left sidebar nav instead of bottom tabs, wider/multi-column content, and a desktop-optimized Reports page. Mobile-first remains the default and the mobile experience is unchanged.)
 - Motion is dynamic — count-ups, state transitions, signature scan-flow choreography
 - `prefers-reduced-motion` must be respected
 
@@ -382,3 +400,4 @@ These live outside the repo. Hafis maintains them as the project's "second brain
 | Date | Status |
 |------|--------|
 | 2026-06-03 | CLAUDE.md drafted in vault. No code yet. Phase 0 of roadmap starts next. |
+| 2026-06-04 | All 4 MVP features built; added local auth UI, beranda dashboard, budget-vs-actual insight + reduction recommendations. |

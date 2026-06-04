@@ -2,7 +2,7 @@
 title: "Fintrack — Decision Log"
 type: project-doc
 created: 2026-06-03
-last_updated: 2026-06-03 (added ADR-008–013 — storage + Tailwind/shadcn-vue + vibe coding + design system)
+last_updated: 2026-06-04 (added ADR-015 — learning strategy: AI builds CRUD, Hafis hand-builds L2 + L5)
 tags: [project, decisions, adr, fintrack]
 related:
   - "[[(C) PROJECT.md]]"
@@ -289,6 +289,51 @@ ADR-style log. One entry per decision. Don't edit past decisions — add new one
 - No Go code changes expected outside config
 
 **Supersedes:** No prior ADR. Refines the Supabase plan in ADR-007 — Supabase is still the production target, just deferred until after personal validation.
+
+---
+
+## ADR-015 — Learning strategy: AI builds CRUD, Hafis hand-builds L2 + L5 (2026-06-04)
+
+**Decision:** Frame Fintrack's build using the 5-layer harness model (Constraint / Context / Execution / Verification / Lifecycle) from Han Yan's Opus 4.8 analysis. Anthropic now absorbs L1, L3, and most of L4. The durable skill — what Hafis is building this project to learn — lives in L2 (context engineering) and L5 (evals/lifecycle). So:
+
+- **AI authors the boring infrastructure** (auth middleware, sqlc queries, Echo routes, Vue components, PWA config). Hafis reviews, does not write from scratch.
+- **Hafis hand-builds the AI-native parts** — specifically:
+  - Receipt parsing prompt design
+  - Indonesian merchant disambiguation logic
+  - Category taxonomy + transaction-history context threading (L2)
+  - A labeled eval set of ~50 real receipts + an eval-runner script (L5)
+- **Phase 0 hard gate:** The eval-runner exists *before* the first feature is built. No agent code ships without a measurable pass-rate against the labeled set.
+- **L4 gates are pruned to domain-only:** Keep checks that encode IDR rules / category invariants / financial-accuracy guarantees. Drop generic "did the LLM hallucinate" critics — the 4.8-class model handles those upstream.
+
+**Why:**
+- Hafis explicitly chose "learn deep" over "ship fast" when asked to name the trade-off (vault chat, 2026-06-04)
+- L1/L3/L4 skills are vendor-absorbable on a 6–12 month horizon. L2/L5 skills compound over a career.
+- The stated primary goal in ADR-001 / ADR-002 / ADR-012 is *learning production AI-native patterns* — letting Claude Code build the entire app end-to-end would satisfy the secondary product goal but defeat the primary learning goal
+- Eval-driven development is the missing skill in most fullstack devs' AI toolkit. Building it now is high-leverage.
+
+**Operating rules:**
+- Every prompt change must be measured against the eval set. No "feels better" merges.
+- When Hafis notices himself reaching for an off-the-shelf agent framework for the receipt-parser, stop. That's the L2 work he's here to learn.
+- When Hafis notices himself reaching for hand-rolled orchestration (planner + fan-out + retry logic), use Dynamic Workflows instead. That's L3 — let the platform own it.
+
+**Trade-off:**
+- Slower MVP. Eval-set construction alone is ~1 week of unglamorous labeling work before any feature code.
+- Higher early-stage frustration: friends shipping with Cursor + Lovable will be visibly faster.
+- Risk of abandoning the discipline under "just ship" pressure → silent downgrade to ship-fast mode without admitting it.
+
+**Alternatives considered:**
+- **Pure ship-fast (AI builds everything end-to-end):** Rejected. Achieves the product goal but produces commodity-disposable skill. Defeats the primary goal.
+- **Pure hand-build (Hafis writes every line):** Rejected. Defeats the speed advantage of AI tooling entirely; no AI-native learning beyond "I can type code that AI suggested."
+- **Hybrid v0.1 → rewrite L2/L5:** Considered. Rejected because the rewrite never happens in practice once a working app exists.
+
+**Watch-for / abandonment criteria:**
+- If by Phase 2 the eval set has fewer than 30 labeled receipts, the discipline is failing — pause and reassess.
+- If a prompt change is merged without an eval run, that's the first warning sign of drift.
+- If Hafis catches himself building bespoke orchestration plumbing, revisit this ADR before continuing.
+
+**Supersedes:** No prior ADR — refines the learning framing in ADR-001 and ADR-002 with a concrete operating model.
+
+**Source:** Han Yan, "What Anthropic Didn't Say About Opus 4.8" — ingested to brain vault at `00 Notes/Articles/(C) Opus 4.8 Absorbs Your Harness — Han Heloir Yan.md`
 
 ---
 
