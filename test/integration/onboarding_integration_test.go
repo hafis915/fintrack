@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -146,12 +147,12 @@ func TestIntegration_Onboarding_RejectsInvalidPayload(t *testing.T) {
 	uid := uuid.New()
 
 	cases := map[string]func(*onboardingReq){
-		"zero_income":      func(r *onboardingReq) { r.Income = 0 },
-		"bad_housing":      func(r *onboardingReq) { r.HousingType = "mansion" },
-		"bad_goal":         func(r *onboardingReq) { r.Goal = "yolo" },
-		"bad_lifestyle":    func(r *onboardingReq) { r.LifestyleStyle = "spartan" },
-		"bad_emergency":    func(r *onboardingReq) { r.EmergencyMonths = 2 },
-		"non_uuid_cat":     func(r *onboardingReq) { r.ExpenseItems[0].CategoryID = "not-a-uuid" },
+		"zero_income":   func(r *onboardingReq) { r.Income = 0 },
+		"bad_housing":   func(r *onboardingReq) { r.HousingType = "mansion" },
+		"bad_goal":      func(r *onboardingReq) { r.Goal = "yolo" },
+		"bad_lifestyle": func(r *onboardingReq) { r.LifestyleStyle = "spartan" },
+		"bad_emergency": func(r *onboardingReq) { r.EmergencyMonths = 2 },
+		"non_uuid_cat":  func(r *onboardingReq) { r.ExpenseItems[0].CategoryID = "not-a-uuid" },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -208,6 +209,76 @@ func TestIntegration_Onboarding_RejectsCategoryTypeMismatch(t *testing.T) {
 	}
 	if env.Error == nil || env.Error.Code != "category_type_mismatch" {
 		t.Fatalf("want 'category_type_mismatch', got %+v", env.Error)
+	}
+}
+
+// Bug #2 regression: a degenerate income (e.g. a typo) must yield a clean 400
+// with the income_too_low code — never a 500 from a budget_items.percentage
+// numeric overflow, and never a raw DB error leaked in the response body.
+func TestIntegration_Onboarding_RejectsDegenerateIncome(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	ts := testhelper.NewTestServer(t)
+	defer ts.Close()
+	resetOnboardingTables(t, ts.DB)
+	cats := seedDefaultCategoryIDs(t, ts.DB)
+	uid := uuid.New()
+
+	body := defaultReq(cats)
+	body.Income = 100 // expenses sum to ~3.6jt → ratio ~36000x, far past the 50x guard
+	rr, env := postOnboarding(t, ts, uid, body)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("want 400 (friendly), got %d, body=%s", rr.Code, rr.Body.String())
+	}
+	if env.Error == nil || env.Error.Code != "income_too_low" {
+		t.Fatalf("want code 'income_too_low', got %+v", env.Error)
+	}
+	// The body must never leak a raw DB error (e.g. a numeric-overflow
+	// SQLSTATE 22003) — that would mean the 500 path fired instead of the
+	// friendly 400 guard.
+	if strings.Contains(rr.Body.String(), "SQLSTATE") {
+		t.Errorf("response body leaked a raw DB error: %s", rr.Body.String())
+	}
+
+	// Sanity: a normal valid intake on the same server still returns 201.
+	rrOK, _ := postOnboarding(t, ts, uuid.New(), defaultReq(cats))
+	if rrOK.Code != http.StatusCreated {
+		t.Fatalf("valid intake after degenerate one: want 201, got %d, body=%s",
+			rrOK.Code, rrOK.Body.String())
+	}
+}
+
+// Bug #2 fix: an overspending budget (expenses > income, but within the
+// degenerate-input ceiling) must be ALLOWED — it produces a plan with a
+// coaching warning instead of being hard-blocked. Income 50k vs ~3.6jt of
+// declared expenses is a 72x ratio: rejected under the old 50x cap, accepted
+// under the 999x cap so the "gym for your money" overspender gets coached.
+func TestIntegration_Onboarding_AllowsOverspendWithWarning(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	ts := testhelper.NewTestServer(t)
+	defer ts.Close()
+	resetOnboardingTables(t, ts.DB)
+	cats := seedDefaultCategoryIDs(t, ts.DB)
+
+	body := defaultReq(cats)
+	body.Income = 50_000 // expenses ~3.6jt → 72x: overspend, but not a typo
+	rr, env := postOnboarding(t, ts, uuid.New(), body)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("overspend within ceiling: want 201, got %d, body=%s", rr.Code, rr.Body.String())
+	}
+	// Savings (tabungan) goes negative and the plan carries a coaching warning.
+	summary, ok := env.Data["summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("summary missing: %T", env.Data["summary"])
+	}
+	if amt := summary["tabungan"].(map[string]any)["amount"].(float64); amt >= 0 {
+		t.Errorf("tabungan: want negative (overspend), got %v", amt)
+	}
+	if w, _ := env.Data["warning"].(string); w == "" {
+		t.Error("want a coaching warning for the overspend plan, got empty")
 	}
 }
 

@@ -78,4 +78,40 @@ test.describe('Budget / fatigue dashboard', () => {
     const items = page.getByTestId('budget-items').locator('article')
     await expect(items.first()).toContainText('Kartu kredit')
   })
+
+  test('over-budget category surfaces a recommendation + the compare chart', async ({ page }) => {
+    const { userId } = await authedSession(page)
+
+    seedUser(userId)
+    const cats = getDefaultCategoryIDs()
+
+    seedBudgetPlan({
+      userId,
+      income: 8_000_000,
+      program: 'seimbang',
+      items: [
+        { categoryId: cats['Makan & minum'], allocated: 1_000_000, percentage: 12.5 },
+        { categoryId: cats['Hiburan'], allocated: 500_000, percentage: 6.25 },
+      ],
+    })
+
+    // Makan & minum is driven OVER budget (1.3M spent vs 1M allocated).
+    seedTransaction({ userId, categoryId: cats['Makan & minum'], amount: 1_300_000 })
+    // Hiburan stays comfortably under.
+    seedTransaction({ userId, categoryId: cats['Hiburan'], amount: 100_000 })
+
+    await page.goto('/budget')
+    await expect(page.getByTestId('budget-view')).toBeVisible()
+
+    // Recommendations block renders with a reco-item for the over-budget category.
+    const recos = page.getByTestId('budget-recommendations')
+    await expect(recos).toBeVisible()
+    await expect(page.getByTestId('reco-item-Makan & minum')).toBeVisible()
+    // The over-budget reco quantifies the overspend (1.3M - 1M = 300k).
+    await expect(page.getByTestId('reco-item-Makan & minum')).toContainText('Rp 300.000')
+
+    // The budget-vs-realisasi chart is visible with a row for the category.
+    await expect(page.getByTestId('budget-compare-chart')).toBeVisible()
+    await expect(page.getByTestId('compare-row-Makan & minum')).toBeVisible()
+  })
 })

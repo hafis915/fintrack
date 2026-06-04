@@ -74,16 +74,92 @@ test.describe('Onboarding flow', () => {
     await expect(page.getByTestId('result-bucket-utang')).toContainText('Rp 0')
   })
 
+  // Bug #1: "Ubah jawaban" must restore the user's previous answers instead
+  // of resetting the form to defaults.
+  test('Ubah jawaban restores previous answers', async ({ page }) => {
+    await page.goto('/onboarding')
+    await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
+
+    await page.getByTestId('onb-income').fill('5500000')
+    await page.getByTestId('onb-goal').selectOption('invest')
+    await page.getByTestId('onb-submit').click()
+    await expect(page).toHaveURL(/\/onboarding\/result$/)
+
+    // Go back to edit answers.
+    await page.getByTestId('result-restart').click()
+    await expect(page).toHaveURL(/\/onboarding$/)
+    await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
+
+    // Answers are preserved, not reset to the 8.000.000 / debt defaults.
+    await expect(page.getByTestId('onb-income')).toHaveValue('5500000')
+    await expect(page.getByTestId('onb-goal')).toHaveValue('invest')
+  })
+
+  // Bug #2: an overspending budget shows a coaching chip but still submits
+  // (no disabled/blocked "next").
+  test('overspending shows a coaching chip and still submits', async ({ page }) => {
+    await page.goto('/onboarding')
+    await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
+
+    // Push a want item far above income (8.000.000 default) → total overspends.
+    await page.getByTestId('onb-item-amount-Hiburan').fill('9000000')
+
+    await expect(page.getByTestId('onb-overspend')).toBeVisible()
+    await expect(page.getByTestId('onb-overspend')).toContainText(/melebihi pemasukan/i)
+    // Submit is NOT disabled by overspending.
+    await expect(page.getByTestId('onb-submit')).toBeEnabled()
+
+    await page.getByTestId('onb-submit').click()
+    await expect(page).toHaveURL(/\/onboarding\/result$/)
+    await expect(page.getByTestId('result-warning')).toBeVisible()
+  })
+
+  // New: a user can add an expense the default seed doesn't cover, and it
+  // flows into the generated plan.
+  test('can add a custom expense not in the defaults', async ({ page }) => {
+    await page.goto('/onboarding')
+    await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
+
+    await page.getByTestId('onb-add-name').fill('Kursus online')
+    await page.getByTestId('onb-add-type').selectOption('want')
+    await page.getByTestId('onb-add-amount').fill('300000')
+    await page.getByTestId('onb-add-submit').click()
+
+    // The new item appears as a normal, enabled expense row.
+    await expect(page.getByTestId('onb-item-enable-Kursus online')).toBeVisible()
+
+    await page.getByTestId('onb-submit').click()
+    await expect(page).toHaveURL(/\/onboarding\/result$/)
+    await expect(page.getByTestId('result-items')).toContainText('Kursus online')
+  })
+
+  // The result page must finish onboarding, not dead-end. "Lanjut" takes the
+  // user to their live budget dashboard.
+  test('result page continues to the budget dashboard', async ({ page }) => {
+    await page.goto('/onboarding')
+    await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
+    await page.getByTestId('onb-submit').click()
+    await expect(page).toHaveURL(/\/onboarding\/result$/)
+
+    await page.getByTestId('result-continue').click()
+    await expect(page).toHaveURL(/\/budget$/)
+    await expect(page.getByTestId('budget-view')).toBeVisible()
+    // The plan just created renders (not the no-plan CTA).
+    await expect(page.getByTestId('budget-summary')).toBeVisible({ timeout: 5_000 })
+  })
+
   test('surfaces backend validation errors inline', async ({ page }) => {
     await page.goto('/onboarding')
     await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
 
-    // Income = 0 fails server-side validation.
+    // Income below the floor is now caught by the client guard (bug #3) before
+    // it reaches the API, surfacing a friendly inline message and keeping us on
+    // /onboarding with no navigation.
     await page.getByTestId('onb-income').fill('0')
     await page.getByTestId('onb-submit').click()
 
     await expect(page.getByTestId('onb-error')).toBeVisible()
-    await expect(page.getByTestId('onb-error')).toContainText(/income/i)
+    await expect(page.getByTestId('onb-error')).toContainText(/pemasukan/i)
     await expect(page).toHaveURL(/\/onboarding$/)
   })
 })

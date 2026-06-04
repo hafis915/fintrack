@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -38,6 +39,110 @@ func TestIntegration_Categories_RequiresAuth(t *testing.T) {
 	ts.Echo.ServeHTTP(rr, req)
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("want 401, got %d", rr.Code)
+	}
+}
+
+type categoryOneEnvelope struct {
+	Data  *categoryItem `json:"data,omitempty"`
+	Error *struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error,omitempty"`
+}
+
+func postCategory(t *testing.T, ts *testhelper.TestServer, uid uuid.UUID, body any) (*httptest.ResponseRecorder, categoryOneEnvelope) {
+	t.Helper()
+	raw, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/v1/categories", bytes.NewReader(raw))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+testhelper.MintTokenForUser(t, uid))
+	rr := httptest.NewRecorder()
+	ts.Echo.ServeHTTP(rr, req)
+	var env categoryOneEnvelope
+	_ = json.Unmarshal(rr.Body.Bytes(), &env)
+	return rr, env
+}
+
+func TestIntegration_Categories_Create_RequiresAuth(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	ts := testhelper.NewTestServer(t)
+	defer ts.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/categories",
+		bytes.NewReader([]byte(`{"name":"X","type":"variable"}`)))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	ts.Echo.ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("want 401, got %d", rr.Code)
+	}
+}
+
+func TestIntegration_Categories_Create_AddsCustomAndListsIt(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	ts := testhelper.NewTestServer(t)
+	defer ts.Close()
+	resetOnboardingTables(t, ts.DB)
+	uid := uuid.New()
+
+	rr, env := postCategory(t, ts, uid, map[string]any{"name": "Kursus online", "type": "want"})
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("want 201, got %d, body=%s", rr.Code, rr.Body.String())
+	}
+	if env.Data == nil || env.Data.Name != "Kursus online" || env.Data.Type != "want" {
+		t.Fatalf("unexpected created category: %+v", env.Data)
+	}
+	if env.Data.IsDefault {
+		t.Error("custom category must not be is_default")
+	}
+	newID := env.Data.ID
+
+	// It now appears in this user's category list.
+	listReq := httptest.NewRequest(http.MethodGet, "/v1/categories", nil)
+	listReq.Header.Set("Authorization", "Bearer "+testhelper.MintTokenForUser(t, uid))
+	listRR := httptest.NewRecorder()
+	ts.Echo.ServeHTTP(listRR, listReq)
+	var list categoryListEnvelope
+	_ = json.Unmarshal(listRR.Body.Bytes(), &list)
+	found := false
+	for _, c := range list.Data {
+		if c.ID == newID {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("created custom category not returned by GET /v1/categories")
+	}
+}
+
+func TestIntegration_Categories_Create_RejectsBadInput(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	ts := testhelper.NewTestServer(t)
+	defer ts.Close()
+	resetOnboardingTables(t, ts.DB)
+	uid := uuid.New()
+
+	cases := map[string]map[string]any{
+		"empty_name":   {"name": "  ", "type": "want"},
+		"bad_type":     {"name": "X", "type": "luxury"},
+		"missing_type": {"name": "X"},
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			rr, env := postCategory(t, ts, uid, body)
+			if rr.Code != http.StatusBadRequest {
+				t.Fatalf("want 400, got %d, body=%s", rr.Code, rr.Body.String())
+			}
+			if env.Error == nil {
+				t.Error("want an error body, got none")
+			}
+		})
 	}
 }
 

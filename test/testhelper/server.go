@@ -15,8 +15,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 
+	"github.com/hafis915/fintrack/internal/ai"
 	"github.com/hafis915/fintrack/internal/config"
 	"github.com/hafis915/fintrack/internal/server"
+	"github.com/hafis915/fintrack/internal/storage"
 	"github.com/hafis915/fintrack/pkg/logger"
 )
 
@@ -65,6 +67,7 @@ func NewTestServer(t *testing.T) *TestServer {
 		JWTIssuer:           TestJWTIssuer,
 		IncomeEncryptionKey: TestEncryptionKey,
 		CORSAllowedOrigins:  "http://localhost:5173",
+		AuthLocalEnabled:    true, // exercise the Phase 0 local register/login routes
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -84,6 +87,9 @@ func NewTestServer(t *testing.T) *TestServer {
 		Config: cfg,
 		Logger: log,
 		DB:     pool,
+		// Stub out third-party deps so integration tests never hit Claude or MinIO.
+		ReceiptAnalyzer: ai.NewStubAnalyzer(),
+		Storage:         storage.NewStubStorage(),
 	})
 	if err != nil {
 		pool.Close()

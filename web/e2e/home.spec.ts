@@ -1,32 +1,107 @@
 import { test, expect } from '@playwright/test'
+import { mintToken } from './helpers/auth'
+import { resetOnboardingDB } from './helpers/db'
+import { getDefaultCategoryIDs, seedBudgetPlan, seedTransaction, seedUser } from './helpers/seed'
 
 /**
- * Phase 0 smoke flow.
+ * Home dashboard flow.
  *
- * A real user lands on the home page and the app should:
- *   - render the Fintrack heading
- *   - call the backend /health endpoint via the Vite proxy
- *   - render db:ok + status:ok in the status card
+ * The Phase-0 health card is gone. Home is now a real dashboard:
+ *   - with a seeded budget plan → greeting + this-month snapshot + quick actions
+ *   - with a token but NO plan → "Mulai onboarding" prompt
  *
- * This is the only user-facing flow in Phase 0. Future phases must add
- * one spec per flow (onboarding, transactions, scan, fatigue) — see DoD in
- * CLAUDE.md.
+ * We seed via SQL (like budget.spec.ts) rather than driving onboarding for
+ * every test — that flow has its own coverage and DB seeding is faster +
+ * deterministic for the dashboard UI under test here.
+ *
+ * The pure-API checks (/health envelope, /v1/me without a token) don't depend
+ * on the old card and stay.
  */
-test.describe('Phase 0 home', () => {
-  test('renders heading and live health from the backend', async ({ page }) => {
+async function authedSession(page: import('@playwright/test').Page): Promise<{ userId: string }> {
+  resetOnboardingDB()
+  const { token, userId } = mintToken()
+  await page.addInitScript(
+    ({ token, userId }) => {
+      localStorage.setItem('fintrack.token', token)
+      localStorage.setItem('fintrack.user_id', userId)
+    },
+    { token, userId },
+  )
+  return { userId }
+}
+
+test.describe('Home dashboard', () => {
+  test('with a seeded plan shows greeting, snapshot, and quick actions', async ({ page }) => {
+    const { userId } = await authedSession(page)
+
+    seedUser(userId)
+    const cats = getDefaultCategoryIDs()
+
+    seedBudgetPlan({
+      userId,
+      income: 8_000_000,
+      program: 'seimbang',
+      items: [
+        { categoryId: cats['Makan & minum'], allocated: 1_000_000, percentage: 12.5 },
+        { categoryId: cats['Hiburan'], allocated: 500_000, percentage: 6.25 },
+      ],
+    })
+    seedTransaction({ userId, categoryId: cats['Makan & minum'], amount: 400_000 })
+
     await page.goto('/')
 
-    await expect(page.getByRole('heading', { name: 'Fintrack' })).toBeVisible()
-    await expect(page.getByText(/Money discipline that feels like training/i)).toBeVisible()
+    await expect(page.getByTestId('home-view')).toBeVisible()
+    await expect(page.getByTestId('home-greeting')).toBeVisible()
 
-    const card = page.getByTestId('health-card')
-    await expect(card).toBeVisible()
+    // This-month snapshot renders with the seeded numbers.
+    const snapshot = page.getByTestId('home-snapshot')
+    await expect(snapshot).toBeVisible()
+    await expect(snapshot).toContainText('Rp 8.000.000')
+    await expect(snapshot).toContainText('Rp 400.000')
 
-    await expect(page.getByTestId('health-loading')).toBeHidden({ timeout: 5_000 })
+    // No-plan prompt must NOT be present when a plan exists.
+    await expect(page.getByTestId('home-no-plan')).toHaveCount(0)
 
-    await expect(page.getByTestId('health-status')).toHaveText('ok')
-    await expect(page.getByTestId('health-db')).toHaveText('ok')
-    await expect(page.getByTestId('health-version')).toHaveText('0.0.0')
+    // Quick-action buttons are all present.
+    await expect(page.getByTestId('home-cta-scan')).toBeVisible()
+    await expect(page.getByTestId('home-cta-transactions')).toBeVisible()
+    await expect(page.getByTestId('home-cta-budget')).toBeVisible()
+  })
+
+  test('quick-action CTA navigates to its route', async ({ page }) => {
+    const { userId } = await authedSession(page)
+
+    seedUser(userId)
+    const cats = getDefaultCategoryIDs()
+    seedBudgetPlan({
+      userId,
+      income: 8_000_000,
+      program: 'seimbang',
+      items: [{ categoryId: cats['Hiburan'], allocated: 500_000, percentage: 6.25 }],
+    })
+
+    await page.goto('/')
+    await expect(page.getByTestId('home-cta-transactions')).toBeVisible()
+
+    await page.getByTestId('home-cta-transactions').click()
+    await expect(page).toHaveURL(/\/transactions$/)
+    await expect(page.getByTestId('transactions-view')).toBeVisible()
+  })
+
+  test('with a token but no plan shows the onboarding prompt', async ({ page }) => {
+    await authedSession(page)
+
+    await page.goto('/')
+
+    await expect(page.getByTestId('home-view')).toBeVisible()
+    await expect(page.getByTestId('home-greeting')).toBeVisible()
+
+    const prompt = page.getByTestId('home-no-plan')
+    await expect(prompt).toBeVisible()
+    await expect(prompt).toContainText('Mulai onboarding')
+
+    // The snapshot belongs to the has-plan branch and must be absent.
+    await expect(page.getByTestId('home-snapshot')).toHaveCount(0)
   })
 
   test('serves the /health JSON envelope directly from the API', async ({ request }) => {

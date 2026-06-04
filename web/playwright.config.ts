@@ -39,12 +39,18 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Mobile-first is the product's default — the bottom tab nav only renders
+    // below the `lg` (1024px) breakpoint. Run the whole suite at a phone-sized
+    // viewport so the existing mobile-first specs exercise the real mobile
+    // layout. Specs that assert the desktop layer call
+    // page.setViewportSize({ width: 1280, height: 800 }) themselves.
+    viewport: { width: 390, height: 844 },
   },
 
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } },
     },
   ],
 
