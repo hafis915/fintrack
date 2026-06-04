@@ -5,25 +5,20 @@ records in-repo what's being built and why, so it travels with the code.
 
 ---
 
-## ⚠️ NEXT-SESSION STATUS (end of 2026-06-04, session 2)
+## NEXT-SESSION STATUS (end of 2026-06-04, session 2)
 
-**Everything in "Feature batch 3" below is built, verified green, and UNCOMMITTED on `main`'s
-working tree.** Nothing from session 2 has been committed yet. Before more feature work, decide:
-commit + merge this batch (Hafis said "merge to main" earlier but the batch grew after that), then
-optionally push (origin/main is public; generated sqlc + web/ are gitignored, so add CI before relying
-on the remote).
+**Feature batch 3 below is built, verified green, and COMMITTED to `main`** in 3 commits:
+- `bab2de0` feat(onboarding): conversational financial planner backend
+- `1b8b977` feat(web): planner wizard, inline categories, re-budget, brutalist + desktop UI
+- `e0da8d2` docs: record session-2 batch
 
-Verified locally at session end: `go build ./...` ✅, `vue-tsc --noEmit` ✅, `make test` ✅,
+**Not yet pushed.** `origin/main` is public and generated sqlc + `web/` build output are gitignored, so
+**add CI (sqlc generate + go build + make test + e2e) before relying on the remote**, then push.
+
+Verified at session end: `go build ./...` ✅, `vue-tsc --noEmit` ✅, `make test` ✅,
 `make test-e2e` ✅ **37/37**.
 
-Suggested commit split:
-1. `feat(onboarding): conversational financial planner (suggest + chat, LLM layer)`
-2. `feat(categories): inline custom-category creation in onboarding + transactions`
-3. `feat(budget): re-budget entry point from the dashboard`
-4. `style(ui): neo-brutalist light theme`
-5. `feat(ui): desktop-optimized layouts + sidebar logout`
-
-Dev stack may still be running (API :8080, vite :5173). Recorded gstack learnings this session:
+Recorded gstack learnings this session:
 `e2e-dev-server-shadow`, `stale-sqlc-ide-diagnostics`, `dev-jwt-secret-mismatch`,
 `onboarding-finalize-idempotent`, `zsh-uid-readonly`, `playwright-default-viewport-390`
 (see `/learn`).
@@ -109,7 +104,7 @@ should be updated to reflect the brutalist direction — not yet done.
 
 ---
 
-## Feature batch 3 (this session, 2026-06-04 session 2) — DONE, **UNCOMMITTED**
+## Feature batch 3 (this session, 2026-06-04 session 2) — DONE + committed (not pushed)
 
 1. **Conversational planner onboarding** — 3-step wizard (`OnboardingView.vue` + `PlannerChat.vue`),
    `internal/llm/` (OpenRouter + stub), `internal/domain/budget/planner.go`,

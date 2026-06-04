@@ -78,8 +78,8 @@ Approved by Hafis; design + rationale recorded in `PLAN.md` (ADR-2026-06-04).
 
 ### v1 scope additions (accepted 2026-06-04, batch 3 — session 2)
 
-Approved by Hafis; design + rationale recorded in `PLAN.md` (ADR-2026-06-04b). **Built + verified green
-(`make test` / `make test-e2e` 37/37) but UNCOMMITTED on `main` as of end of session 2 — see the
+Approved by Hafis; design + rationale recorded in `PLAN.md` (ADR-2026-06-04b). **Built, verified green
+(`make test` / `make test-e2e` 37/37), and committed to `main` (3 commits, not yet pushed) — see the
 "NEXT-SESSION STATUS" banner in `PLAN.md`.**
 
 - **Conversational planner onboarding** — onboarding is a 3-step wizard: 6 questions → **fixed expenses
@@ -429,4 +429,4 @@ These live outside the repo. Hafis maintains them as the project's "second brain
 |------|--------|
 | 2026-06-03 | CLAUDE.md drafted in vault. No code yet. Phase 0 of roadmap starts next. |
 | 2026-06-04 (s1) | All 4 MVP features built; added local auth UI, beranda dashboard, budget-vs-actual insight + reduction recommendations. Committed to `main`. |
-| 2026-06-04 (s2) | Conversational planner onboarding (LLM language-layer + deterministic Go math), inline custom-category creation, re-budget button, neo-brutalist light theme, desktop-optimized layouts + sidebar logout. Verified green (`make test` + `make test-e2e` 37/37). **UNCOMMITTED — see `PLAN.md` NEXT-SESSION STATUS banner.** |
+| 2026-06-04 (s2) | Conversational planner onboarding (LLM language-layer + deterministic Go math), inline custom-category creation, re-budget button, neo-brutalist light theme, desktop-optimized layouts + sidebar logout. Verified green (`make test` + `make test-e2e` 37/37). **Committed to `main` (3 commits, not pushed) — see `PLAN.md` NEXT-SESSION STATUS banner.** |
