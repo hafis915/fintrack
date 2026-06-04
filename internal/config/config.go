@@ -36,6 +36,12 @@ type Config struct {
 	AnthropicAPIKey string `mapstructure:"ANTHROPIC_API_KEY"`
 	AnthropicModel  string `mapstructure:"ANTHROPIC_MODEL"`
 
+	// OpenRouter powers the financial planner chat (language layer only — the
+	// budget math is deterministic). Leave OpenRouterAPIKey empty to fall back
+	// to the deterministic stub client (no network calls).
+	OpenRouterAPIKey string `mapstructure:"OPEN_ROUTER_API_KEY"`
+	OpenRouterModel  string `mapstructure:"OPEN_ROUTER_MODEL"`
+
 	CORSAllowedOrigins string `mapstructure:"CORS_ALLOWED_ORIGINS"`
 }
 
@@ -60,6 +66,8 @@ func Load() (*Config, error) {
 	v.SetDefault("STORAGE_BUCKET", "receipts")
 	v.SetDefault("ANTHROPIC_API_KEY", "")
 	v.SetDefault("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+	v.SetDefault("OPEN_ROUTER_API_KEY", "")
+	v.SetDefault("OPEN_ROUTER_MODEL", "nousresearch/hermes-3-llama-3.1-405b")
 	v.SetDefault("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 	// .env is optional — we may run with only real env vars in prod.

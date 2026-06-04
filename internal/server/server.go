@@ -16,6 +16,7 @@ import (
 	"github.com/hafis915/fintrack/internal/config"
 	"github.com/hafis915/fintrack/internal/encryption"
 	"github.com/hafis915/fintrack/internal/handler"
+	"github.com/hafis915/fintrack/internal/llm"
 	"github.com/hafis915/fintrack/internal/middleware"
 	"github.com/hafis915/fintrack/internal/repository"
 	"github.com/hafis915/fintrack/internal/storage"
@@ -34,6 +35,12 @@ type Deps struct {
 	// Integration tests inject stubs so they never hit Claude or MinIO.
 	ReceiptAnalyzer ai.ReceiptAnalyzer
 	Storage         storage.Storage
+
+	// LLM is an optional override for the financial-planner chat language layer.
+	// When nil, New builds the OpenRouter client when OPEN_ROUTER_API_KEY is set,
+	// or the deterministic stub otherwise. Integration/e2e tests inject the stub
+	// so they never call OpenRouter.
+	LLM llm.Client
 }
 
 // New returns a configured Echo instance with global middleware mounted
@@ -73,6 +80,22 @@ func New(d Deps) (*echo.Echo, error) {
 		}
 	}
 
+	// Planner language layer: caller override → real OpenRouter client when an
+	// API key is configured → deterministic stub otherwise (local dev / tests).
+	// The stub does network-free NLU; the budget math is always deterministic.
+	plannerLLM := d.LLM
+	if plannerLLM == nil {
+		// In the test environment we ALWAYS use the deterministic stub so e2e and
+		// integration runs never hit the network (and never flake on upstream
+		// rate limits). This holds even if a real OPEN_ROUTER_API_KEY leaks in via
+		// a developer's .env file, which viper merges ahead of env vars.
+		if d.Config.Env == "test" || d.Config.OpenRouterAPIKey == "" {
+			plannerLLM = llm.NewStubClient()
+		} else {
+			plannerLLM = llm.NewOpenRouterClient(d.Config.OpenRouterAPIKey, d.Config.OpenRouterModel, nil)
+		}
+	}
+
 	users := repository.NewUsersRepo(d.DB)
 	userProfiles := repository.NewUserProfilesRepo(d.DB)
 	categories := repository.NewCategoriesRepo(d.DB)
@@ -97,6 +120,7 @@ func New(d Deps) (*echo.Echo, error) {
 	transactionsHandler := handler.NewTransactions(transactionsRepo, categories)
 	receiptsHandler := handler.NewReceipts(transactionsRepo, categories, analyzer, store)
 	budgetHandler := handler.NewBudget(fatigueRepo)
+	plannerHandler := handler.NewPlanner(categories, plannerLLM)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -131,6 +155,10 @@ func New(d Deps) (*echo.Echo, error) {
 	)
 	v1.GET("/me", meHandler())
 	v1.POST("/onboarding", onboarding.Handle)
+	// Goal-first planner: deterministic suggestion + multi-turn chat refinement.
+	// The LLM is the language layer only — budget math stays deterministic.
+	v1.POST("/onboarding/suggest", plannerHandler.Suggest)
+	v1.POST("/planner/chat", plannerHandler.Chat)
 	v1.GET("/categories", categoriesHandler.List)
 	v1.POST("/categories", categoriesHandler.Create)
 	v1.POST("/transactions", transactionsHandler.Create)

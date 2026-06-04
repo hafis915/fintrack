@@ -17,6 +17,7 @@ import (
 
 	"github.com/hafis915/fintrack/internal/ai"
 	"github.com/hafis915/fintrack/internal/config"
+	"github.com/hafis915/fintrack/internal/llm"
 	"github.com/hafis915/fintrack/internal/server"
 	"github.com/hafis915/fintrack/internal/storage"
 	"github.com/hafis915/fintrack/pkg/logger"
@@ -87,9 +88,11 @@ func NewTestServer(t *testing.T) *TestServer {
 		Config: cfg,
 		Logger: log,
 		DB:     pool,
-		// Stub out third-party deps so integration tests never hit Claude or MinIO.
+		// Stub out third-party deps so integration tests never hit Claude, MinIO,
+		// or OpenRouter. The planner stub does deterministic, network-free NLU.
 		ReceiptAnalyzer: ai.NewStubAnalyzer(),
 		Storage:         storage.NewStubStorage(),
+		LLM:             llm.NewStubClient(),
 	})
 	if err != nil {
 		pool.Close()
