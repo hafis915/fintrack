@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	"github.com/hafis915/fintrack/internal/domain/budget"
 	"github.com/hafis915/fintrack/internal/encryption"
@@ -24,12 +25,13 @@ import (
 // OnboardingDeps groups the dependencies the handler needs. Wired in
 // internal/server when the route is mounted.
 type OnboardingDeps struct {
-	Users         repository.UsersRepo
-	UserProfiles  repository.UserProfilesRepo
-	Categories    repository.CategoriesRepo
-	BudgetPlans   repository.BudgetPlansRepo
-	Cipher        *encryption.Cipher
-	Now           func() time.Time // injectable for deterministic period in tests
+	Users        repository.UsersRepo
+	UserProfiles repository.UserProfilesRepo
+	Categories   repository.CategoriesRepo
+	BudgetPlans  repository.BudgetPlansRepo
+	Cipher       *encryption.Cipher
+	Logger       zerolog.Logger   // structured logger; raw errors logged, never returned to clients
+	Now          func() time.Time // injectable for deterministic period in tests
 }
 
 // Onboarding wires POST /v1/onboarding.
@@ -148,6 +150,10 @@ func (h *Onboarding) Handle(c echo.Context) error {
 
 	plan, err := budget.Allocate(answers, items)
 	if err != nil {
+		if errors.Is(err, budget.ErrIncomeTooLow) {
+			return responses.Err(c, http.StatusBadRequest, "income_too_low",
+				"Angka pengeluaran kelihatan tidak wajar dibanding pemasukan — cek lagi angkanya")
+		}
 		return responses.Err(c, http.StatusBadRequest, "allocation_failed", err.Error())
 	}
 
@@ -193,7 +199,14 @@ func (h *Onboarding) Handle(c echo.Context) error {
 			Program:     string(plan.Program),
 		}, itemParams)
 	if err != nil {
-		return responses.Err(c, http.StatusInternalServerError, "plan_persist_failed", err.Error())
+		// Never leak raw DB errors to the client (they expose schema/constraint
+		// detail). Log the real cause for debugging, return a safe message.
+		h.d.Logger.Error().Err(err).
+			Str("user_id", uid.String()).
+			Str("program", string(plan.Program)).
+			Msg("onboarding: persisting budget plan failed")
+		return responses.Err(c, http.StatusInternalServerError, "plan_persist_failed",
+			"gagal menyimpan rencana, coba lagi")
 	}
 
 	return responses.Created(c, planToResponse(persistedPlan, plan))

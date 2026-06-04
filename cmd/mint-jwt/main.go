@@ -1,7 +1,8 @@
 // mint-jwt: a tiny CLI that issues an HS256 JWT for local development.
 //
 // Usage:
-//   go run ./cmd/mint-jwt -sub <user-uuid> [-secret <hex>] [-ttl 24h]
+//
+//	go run ./cmd/mint-jwt -sub <user-uuid> [-secret <hex>] [-ttl 24h]
 //
 // The token is signed with the same secret the API uses for validation,
 // so a token minted here is accepted by /v1/* routes immediately.
@@ -15,9 +16,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
+	"github.com/hafis915/fintrack/internal/auth"
 	"github.com/hafis915/fintrack/internal/config"
 )
 
@@ -44,31 +45,27 @@ func main() {
 		}
 	}
 
-	subject := *sub
-	if subject == "" {
-		subject = uuid.NewString()
-	} else if _, err := uuid.Parse(subject); err != nil {
-		fmt.Fprintln(os.Stderr, "subject must be a UUID:", err)
-		os.Exit(1)
+	var subject uuid.UUID
+	if *sub == "" {
+		subject = uuid.New()
+	} else {
+		parsed, err := uuid.Parse(*sub)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "subject must be a UUID:", err)
+			os.Exit(1)
+		}
+		subject = parsed
 	}
 
-	now := time.Now().UTC()
-	claims := jwt.RegisteredClaims{
-		Issuer:    signingIssuer,
-		Subject:   subject,
-		IssuedAt:  jwt.NewNumericDate(now),
-		NotBefore: jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(*ttl)),
-	}
-	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := tok.SignedString([]byte(signingSecret))
+	expires := time.Now().UTC().Add(*ttl)
+	signed, err := auth.Mint(signingSecret, signingIssuer, subject, *ttl)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "signing token:", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "sub:      %s\n", subject)
+	fmt.Fprintf(os.Stderr, "sub:      %s\n", subject.String())
 	fmt.Fprintf(os.Stderr, "iss:      %s\n", signingIssuer)
-	fmt.Fprintf(os.Stderr, "expires:  %s\n", claims.ExpiresAt.Time.Format(time.RFC3339))
+	fmt.Fprintf(os.Stderr, "expires:  %s\n", expires.Format(time.RFC3339))
 	fmt.Println(signed)
 }

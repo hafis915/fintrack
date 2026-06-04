@@ -25,6 +25,7 @@ type Transaction struct {
 	CategoryType  string
 	Amount        int64
 	Note          string
+	Merchant      string
 	ReceiptURL    string
 	AICategorized bool
 	AIConfidence  float64
@@ -38,10 +39,18 @@ type CreateTransactionParams struct {
 	CategoryID    uuid.UUID
 	Amount        int64
 	Note          string
+	Merchant      string
 	TransactedAt  time.Time
 	ReceiptURL    string
 	AICategorized bool
 	AIConfidence  float64
+}
+
+type SetReceiptParams struct {
+	ID           uuid.UUID
+	UserID       uuid.UUID
+	ReceiptURL   string
+	AIConfidence float64
 }
 
 type ListTransactionsParams struct {
@@ -67,6 +76,7 @@ type TransactionsRepo interface {
 	Get(ctx context.Context, id, userID uuid.UUID) (Transaction, error)
 	List(ctx context.Context, p ListTransactionsParams) ([]Transaction, int64, error)
 	Update(ctx context.Context, p UpdateTransactionParams) (Transaction, error)
+	SetReceipt(ctx context.Context, p SetReceiptParams) (Transaction, error)
 	SoftDelete(ctx context.Context, id, userID uuid.UUID) error
 }
 
@@ -99,6 +109,7 @@ func (r *transactionsRepo) Create(ctx context.Context, p CreateTransactionParams
 		CategoryID:    toPgUUID(p.CategoryID),
 		Amount:        p.Amount,
 		Note:          nilIfEmpty(p.Note),
+		Merchant:      nilIfEmpty(p.Merchant),
 		ReceiptUrl:    nilIfEmpty(p.ReceiptURL),
 		AiCategorized: p.AICategorized,
 		TransactedAt:  toPgTime(p.TransactedAt),
@@ -117,6 +128,7 @@ func (r *transactionsRepo) Create(ctx context.Context, p CreateTransactionParams
 		CategoryID:    fromPgUUID(row.CategoryID),
 		Amount:        row.Amount,
 		Note:          strOrEmpty(row.Note),
+		Merchant:      strOrEmpty(row.Merchant),
 		ReceiptURL:    strOrEmpty(row.ReceiptUrl),
 		AICategorized: row.AiCategorized,
 		AIConfidence:  fromPgNumeric(row.AiConfidence),
@@ -148,6 +160,7 @@ func (r *transactionsRepo) Get(ctx context.Context, id, userID uuid.UUID) (Trans
 		CategoryType:  string(row.CategoryType),
 		Amount:        row.Amount,
 		Note:          strOrEmpty(row.Note),
+		Merchant:      strOrEmpty(row.Merchant),
 		ReceiptURL:    strOrEmpty(row.ReceiptUrl),
 		AICategorized: row.AiCategorized,
 		AIConfidence:  fromPgNumeric(row.AiConfidence),
@@ -209,6 +222,7 @@ func (r *transactionsRepo) List(ctx context.Context, p ListTransactionsParams) (
 			CategoryType:  string(row.CategoryType),
 			Amount:        row.Amount,
 			Note:          strOrEmpty(row.Note),
+			Merchant:      strOrEmpty(row.Merchant),
 			ReceiptURL:    strOrEmpty(row.ReceiptUrl),
 			AICategorized: row.AiCategorized,
 			AIConfidence:  fromPgNumeric(row.AiConfidence),
@@ -249,6 +263,42 @@ func (r *transactionsRepo) Update(ctx context.Context, p UpdateTransactionParams
 		CategoryID:    fromPgUUID(row.CategoryID),
 		Amount:        row.Amount,
 		Note:          strOrEmpty(row.Note),
+		Merchant:      strOrEmpty(row.Merchant),
+		ReceiptURL:    strOrEmpty(row.ReceiptUrl),
+		AICategorized: row.AiCategorized,
+		AIConfidence:  fromPgNumeric(row.AiConfidence),
+		TransactedAt:  fromPgTime(row.TransactedAt),
+		CreatedAt:     fromPgTime(row.CreatedAt),
+		UpdatedAt:     fromPgTime(row.UpdatedAt),
+	}, nil
+}
+
+func (r *transactionsRepo) SetReceipt(ctx context.Context, p SetReceiptParams) (Transaction, error) {
+	q := generated.New(r.pool)
+	params := generated.SetTransactionReceiptParams{
+		ID:         toPgUUID(p.ID),
+		UserID:     toPgUUID(p.UserID),
+		ReceiptUrl: nilIfEmpty(p.ReceiptURL),
+	}
+	if p.AIConfidence > 0 {
+		params.AiConfidence = pgNumeric(p.AIConfidence)
+	}
+
+	row, err := q.SetTransactionReceipt(ctx, params)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Transaction{}, apperr.ErrNotFound
+		}
+		return Transaction{}, fmt.Errorf("setting transaction receipt: %w", err)
+	}
+	return Transaction{
+		ID:            fromPgUUID(row.ID),
+		UserID:        fromPgUUID(row.UserID),
+		BudgetPlanID:  optUUID(row.BudgetPlanID),
+		CategoryID:    fromPgUUID(row.CategoryID),
+		Amount:        row.Amount,
+		Note:          strOrEmpty(row.Note),
+		Merchant:      strOrEmpty(row.Merchant),
 		ReceiptURL:    strOrEmpty(row.ReceiptUrl),
 		AICategorized: row.AiCategorized,
 		AIConfidence:  fromPgNumeric(row.AiConfidence),

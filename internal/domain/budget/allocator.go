@@ -7,6 +7,28 @@ import (
 	"github.com/google/uuid"
 )
 
+// ErrIncomeTooLow is returned when declared expenses dwarf income to a degree
+// that can only be a data-entry error (e.g. an income typo). Normal
+// overspending — expenses a few times income — is still allowed; this guards
+// only against absurd input that would otherwise overflow downstream numeric
+// columns. Handlers map it to a clean 400.
+var ErrIncomeTooLow = errors.New("income too low relative to declared expenses")
+
+// maxExpenseToIncomeRatio is the ceiling on (total declared expenses / income)
+// before we treat the input as degenerate. Overspending is a core, supported
+// scenario ("gym for your money" coaches exactly these users), so the ceiling
+// is deliberately high — it exists only to catch a missing/typo'd income
+// (e.g. 10jt expenses vs 100 income = 100000x) before a per-category
+// percentage would overflow the budget_items.percentage numeric(7,2) column
+// (max 99999.99%). At 999x total, no single category can exceed ~99900%, so
+// the insert is always safe. Normal and even heavy overspending (a few x
+// income) flows straight through and gets a coaching Warning instead.
+const maxExpenseToIncomeRatio = 999
+
+// maxExpenseItemAmount caps a single declared expense (1 triliun Rupiah) so the
+// int64 expense sum can't overflow and defeat the ratio guard above.
+const maxExpenseItemAmount = 1_000_000_000_000
+
 // ExpenseType maps to the expense_category_type enum.
 type ExpenseType string
 
@@ -91,6 +113,14 @@ func Allocate(answers IntakeAnswers, items []IntakeItem) (*Plan, error) {
 		if it.Amount < 0 {
 			return nil, errors.New("expense amount cannot be negative")
 		}
+		// Reject absurd per-item amounts BEFORE summing. Without this, a value
+		// near math.MaxInt64 (or several large items) overflows the int64 sum
+		// below, wrapping negative — which then slips past the
+		// maxExpenseToIncomeRatio guard and overflows the numeric(7,2) column at
+		// insert. 1 triliun is far above any real monthly expense.
+		if it.Amount > maxExpenseItemAmount {
+			return nil, ErrIncomeTooLow
+		}
 		pi := PlanItem{
 			CategoryID:      it.CategoryID,
 			CategoryName:    it.Name,
@@ -113,6 +143,15 @@ func Allocate(answers IntakeAnswers, items []IntakeItem) (*Plan, error) {
 			return nil, errors.New("invalid expense type: " + string(it.Type))
 		}
 		plan.Items = append(plan.Items, pi)
+	}
+
+	// Degenerate-input guard: if declared expenses dwarf income beyond any
+	// plausible overspend, the income is almost certainly a typo. Reject with
+	// a clean domain error rather than letting a wildly out-of-range percentage
+	// overflow the budget_items.percentage column at insert time.
+	totalExpenses := kebutuhan + utang + keinginan
+	if totalExpenses > answers.Income*maxExpenseToIncomeRatio {
+		return nil, ErrIncomeTooLow
 	}
 
 	// Tabungan is the residual after the user's declared spending.

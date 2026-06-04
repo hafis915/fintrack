@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
 	"github.com/hafis915/fintrack/internal/repository"
@@ -23,7 +24,7 @@ func EnsureUser(users repository.UsersRepo) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			uid := UserID(c)
-			if uid.String() == "" {
+			if uid == uuid.Nil {
 				return responses.Err(c, http.StatusUnauthorized, "unauthorized", "auth context missing")
 			}
 			// Email defaults to <uuid>@local; Supabase fills the real value later.

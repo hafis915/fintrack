@@ -29,6 +29,18 @@ type ExpenseCategory struct {
 type CategoriesRepo interface {
 	ListForUser(ctx context.Context, userID uuid.UUID) ([]ExpenseCategory, error)
 	GetByID(ctx context.Context, id uuid.UUID) (ExpenseCategory, error)
+	Create(ctx context.Context, p CreateCategoryParams) (ExpenseCategory, error)
+}
+
+// CreateCategoryParams is a user-scoped custom expense category — for items
+// the default seed doesn't cover. SortOrder is set by the caller so customs
+// sort after the system defaults.
+type CreateCategoryParams struct {
+	UserID    uuid.UUID
+	Name      string
+	Icon      string
+	Type      string // fixed | variable | debt | want
+	SortOrder int16
 }
 
 type categoriesRepo struct {
@@ -58,6 +70,20 @@ func (r *categoriesRepo) GetByID(ctx context.Context, id uuid.UUID) (ExpenseCate
 			return ExpenseCategory{}, apperr.ErrNotFound
 		}
 		return ExpenseCategory{}, fmt.Errorf("getting category: %w", err)
+	}
+	return toCategory(row), nil
+}
+
+func (r *categoriesRepo) Create(ctx context.Context, p CreateCategoryParams) (ExpenseCategory, error) {
+	row, err := r.q.CreateCustomExpenseCategory(ctx, generated.CreateCustomExpenseCategoryParams{
+		UserID:    toPgUUID(p.UserID),
+		Name:      p.Name,
+		Icon:      nilIfEmpty(p.Icon),
+		Type:      generated.ExpenseCategoryType(p.Type),
+		SortOrder: p.SortOrder,
+	})
+	if err != nil {
+		return ExpenseCategory{}, fmt.Errorf("creating category: %w", err)
 	}
 	return toCategory(row), nil
 }

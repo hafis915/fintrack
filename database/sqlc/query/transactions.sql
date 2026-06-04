@@ -1,18 +1,18 @@
 -- name: CreateTransaction :one
 insert into transactions (
     user_id, budget_plan_id, category_id, amount, note,
-    receipt_url, ai_categorized, ai_confidence, transacted_at
+    receipt_url, ai_categorized, ai_confidence, transacted_at, merchant
 ) values (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
 returning id, user_id, budget_plan_id, category_id, amount, note,
           receipt_url, ai_categorized, ai_confidence, transacted_at,
-          deleted_at, created_at, updated_at;
+          merchant, deleted_at, created_at, updated_at;
 
 -- name: GetTransactionForUser :one
 select t.id, t.user_id, t.budget_plan_id, t.category_id, t.amount, t.note,
        t.receipt_url, t.ai_categorized, t.ai_confidence, t.transacted_at,
-       t.deleted_at, t.created_at, t.updated_at,
+       t.merchant, t.deleted_at, t.created_at, t.updated_at,
        c.name as category_name, c.icon as category_icon, c.type as category_type
 from transactions t
 join expense_categories c on c.id = t.category_id
@@ -24,7 +24,7 @@ where t.id = $1 and t.user_id = $2 and t.deleted_at is null;
 -- predicate matches every row.
 select t.id, t.user_id, t.budget_plan_id, t.category_id, t.amount, t.note,
        t.receipt_url, t.ai_categorized, t.ai_confidence, t.transacted_at,
-       t.deleted_at, t.created_at, t.updated_at,
+       t.merchant, t.deleted_at, t.created_at, t.updated_at,
        c.name as category_name, c.icon as category_icon, c.type as category_type
 from transactions t
 join expense_categories c on c.id = t.category_id
@@ -58,7 +58,21 @@ set amount         = coalesce(sqlc.narg('amount'),         amount),
 where id = @id and user_id = @user_id and deleted_at is null
 returning id, user_id, budget_plan_id, category_id, amount, note,
           receipt_url, ai_categorized, ai_confidence, transacted_at,
-          deleted_at, created_at, updated_at;
+          merchant, deleted_at, created_at, updated_at;
+
+-- name: SetTransactionReceipt :one
+-- Attaches a receipt + AI verdict to an existing transaction (the confirm
+-- step of the scan flow). Flips ai_categorized on; ai_confidence carries the
+-- model's confidence so the UI can badge low-confidence categorizations.
+update transactions
+set receipt_url    = $3,
+    ai_categorized = true,
+    ai_confidence  = $4,
+    updated_at     = now()
+where id = $1 and user_id = $2 and deleted_at is null
+returning id, user_id, budget_plan_id, category_id, amount, note,
+          receipt_url, ai_categorized, ai_confidence, transacted_at,
+          merchant, deleted_at, created_at, updated_at;
 
 -- name: SoftDeleteTransactionForUser :execrows
 update transactions

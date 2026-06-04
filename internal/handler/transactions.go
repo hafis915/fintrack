@@ -29,17 +29,17 @@ func NewTransactions(repo repository.TransactionsRepo, categories repository.Cat
 // --- request / response shapes ------------------------------------------
 
 type transactionCreateRequest struct {
-	CategoryID    string `json:"category_id"`
-	Amount        int64  `json:"amount"`
-	Note          string `json:"note,omitempty"`
-	TransactedAt  string `json:"transacted_at"` // RFC3339
+	CategoryID   string `json:"category_id"`
+	Amount       int64  `json:"amount"`
+	Note         string `json:"note,omitempty"`
+	TransactedAt string `json:"transacted_at"` // RFC3339
 }
 
 type transactionUpdateRequest struct {
-	CategoryID    *string `json:"category_id,omitempty"`
-	Amount        *int64  `json:"amount,omitempty"`
-	Note          *string `json:"note,omitempty"`
-	TransactedAt  *string `json:"transacted_at,omitempty"`
+	CategoryID   *string `json:"category_id,omitempty"`
+	Amount       *int64  `json:"amount,omitempty"`
+	Note         *string `json:"note,omitempty"`
+	TransactedAt *string `json:"transacted_at,omitempty"`
 }
 
 type transactionResponse struct {
@@ -50,6 +50,7 @@ type transactionResponse struct {
 	CategoryType  string  `json:"category_type,omitempty"`
 	Amount        int64   `json:"amount"`
 	Note          string  `json:"note,omitempty"`
+	Merchant      string  `json:"merchant,omitempty"`
 	ReceiptURL    string  `json:"receipt_url,omitempty"`
 	AICategorized bool    `json:"ai_categorized"`
 	AIConfidence  float64 `json:"ai_confidence,omitempty"`
@@ -284,6 +285,7 @@ func transactionToResponse(tx repository.Transaction, _ repository.ExpenseCatego
 		CategoryType:  tx.CategoryType,
 		Amount:        tx.Amount,
 		Note:          tx.Note,
+		Merchant:      tx.Merchant,
 		ReceiptURL:    tx.ReceiptURL,
 		AICategorized: tx.AICategorized,
 		AIConfidence:  tx.AIConfidence,

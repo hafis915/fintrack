@@ -21,6 +21,10 @@ type Config struct {
 	JWTSecret string `mapstructure:"JWT_SECRET"`
 	JWTIssuer string `mapstructure:"JWT_ISSUER"`
 
+	// AuthLocalEnabled gates the Phase 0 local email register/login routes.
+	// Default true for local dev; set false in prod once Supabase Auth takes over.
+	AuthLocalEnabled bool `mapstructure:"AUTH_LOCAL_ENABLED"`
+
 	IncomeEncryptionKey string `mapstructure:"INCOME_ENCRYPTION_KEY"`
 
 	StorageEndpoint  string `mapstructure:"STORAGE_ENDPOINT"`
@@ -28,6 +32,9 @@ type Config struct {
 	StorageSecretKey string `mapstructure:"STORAGE_SECRET_KEY"`
 	StorageBucket    string `mapstructure:"STORAGE_BUCKET"`
 	StorageUseSSL    bool   `mapstructure:"STORAGE_USE_SSL"`
+
+	AnthropicAPIKey string `mapstructure:"ANTHROPIC_API_KEY"`
+	AnthropicModel  string `mapstructure:"ANTHROPIC_MODEL"`
 
 	CORSAllowedOrigins string `mapstructure:"CORS_ALLOWED_ORIGINS"`
 }
@@ -48,8 +55,11 @@ func Load() (*Config, error) {
 	v.SetDefault("HTTP_HOST", "0.0.0.0")
 	v.SetDefault("HTTP_PORT", 8080)
 	v.SetDefault("JWT_ISSUER", "fintrack-local")
+	v.SetDefault("AUTH_LOCAL_ENABLED", true)
 	v.SetDefault("STORAGE_USE_SSL", false)
 	v.SetDefault("STORAGE_BUCKET", "receipts")
+	v.SetDefault("ANTHROPIC_API_KEY", "")
+	v.SetDefault("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 	v.SetDefault("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 	// .env is optional — we may run with only real env vars in prod.
@@ -83,6 +93,10 @@ func (c *Config) validate() error {
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("missing required env vars: %s", strings.Join(missing, ", "))
+	}
+	// A short HS256 secret is brute-forceable offline from any minted token.
+	if c.JWTSecret != "" && len(c.JWTSecret) < 32 {
+		return fmt.Errorf("JWT_SECRET must be at least 32 bytes (got %d)", len(c.JWTSecret))
 	}
 	return nil
 }
