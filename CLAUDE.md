@@ -76,6 +76,26 @@ Approved by Hafis; design + rationale recorded in `PLAN.md` (ADR-2026-06-04).
 - **Reports page (`/reports`)** — desktop-optimized spending report: **month filter**, spending-by-category table + chart, and **CSV export** of the selected month's transactions.
 - **Month filter** on the Transactions list (date-range, via the existing `from`/`to` API params).
 
+### v1 scope additions (accepted 2026-06-04, batch 3 — session 2)
+
+Approved by Hafis; design + rationale recorded in `PLAN.md` (ADR-2026-06-04b). **Built + verified green
+(`make test` / `make test-e2e` 37/37) but UNCOMMITTED on `main` as of end of session 2 — see the
+"NEXT-SESSION STATUS" banner in `PLAN.md`.**
+
+- **Conversational planner onboarding** — onboarding is a 3-step wizard: 6 questions → **fixed expenses
+  only** → app **auto-suggests flexible (keinginan) amounts** + a savings target, refine by editing a
+  number OR **chatting** with a planner. Money math is deterministic in Go (`internal/domain/budget`);
+  the LLM (`internal/llm`, OpenRouter, stub when `OPEN_ROUTER_API_KEY` empty) is a **language-only**
+  layer. New endpoints: `POST /v1/onboarding/suggest`, `POST /v1/planner/chat`.
+- **Inline custom-category creation** — `AddCategoryInline.vue` in onboarding step 2 and the
+  add-transaction form (so a user can add a category that isn't in the catalog). Uses existing
+  `POST /v1/categories`.
+- **Re-budget entry point** — "↻ Atur ulang budget" on the Budget dashboard re-runs the planner
+  (finalize is idempotent, so it replaces the current-month plan).
+- **Neo-brutalist light theme** — see the Design System note below.
+- **Desktop UX pass** — Home/Budget/Transactions go multi-column at `≥lg`; **logout moved into the
+  sidebar navbar** (home-header `Keluar` is now mobile-only); CTAs + row Edit/Hapus buttons made obvious.
+
 ---
 
 ## Hafis's Learning Goals (PRIMARY)
@@ -375,7 +395,15 @@ All font choices, colors, spacing, motion, and aesthetic direction are defined t
 - Semantic colors: green (Fresh) / amber (Warning) / coral (Fatigued) — **ONLY for state, never decoration**
 - Hero numbers: typographic composition (mono digits + saffron Rp + muted decimals), not just "big bold white text"
 - Both dark and light modes must be tested
-- Mobile-first, single column max-width 420px, bottom tab nav — **on mobile**. (See ADR-2026-06-04 / `PLAN.md`: desktop (≥`lg`) now ADDS a responsive layer — left sidebar nav instead of bottom tabs, wider/multi-column content, and a desktop-optimized Reports page. Mobile-first remains the default and the mobile experience is unchanged.)
+- **Light theme is now NEO-BRUTALIST (accepted 2026-06-04 session 2, ADR-2026-06-04b).** Broken-white bg
+  (`#F1F1EF` — deliberately NOT Anthropic/Claude cream; see auto-memory `feedback-avoid-claude-colors`),
+  white cards, **thick black borders** (`border-2 border-line`), **hard offset shadows** (`shadow-brutal`),
+  **sharp corners** (`rounded-card` = 2px), chunky uppercase buttons with `active:translate` press, solid
+  color-block status chips. Saffron, the three semantic state colors, and the font stack are UNCHANGED.
+  Tokens live in `tailwind.config.ts`. **Rollout is partial** — Home/Budget/Transactions/Onboarding +
+  shared nav are brutalist; `ReportsView`/`ScanView`/`Login`/`Register` still use the old style.
+  Canonical DESIGN.md (vault) not yet updated to match.
+- Mobile-first, single column max-width 420px, bottom tab nav — **on mobile**. (See ADR-2026-06-04 / `PLAN.md`: desktop (≥`lg`) now ADDS a responsive layer — left sidebar nav instead of bottom tabs, wider/multi-column content, and a desktop-optimized Reports page. Mobile-first remains the default and the mobile experience is unchanged. Session 2 extended this: Home/Budget/Transactions also widen/multi-column at `≥lg`, and **logout lives in the sidebar navbar** on desktop.)
 - Motion is dynamic — count-ups, state transitions, signature scan-flow choreography
 - `prefers-reduced-motion` must be respected
 
@@ -400,4 +428,5 @@ These live outside the repo. Hafis maintains them as the project's "second brain
 | Date | Status |
 |------|--------|
 | 2026-06-03 | CLAUDE.md drafted in vault. No code yet. Phase 0 of roadmap starts next. |
-| 2026-06-04 | All 4 MVP features built; added local auth UI, beranda dashboard, budget-vs-actual insight + reduction recommendations. |
+| 2026-06-04 (s1) | All 4 MVP features built; added local auth UI, beranda dashboard, budget-vs-actual insight + reduction recommendations. Committed to `main`. |
+| 2026-06-04 (s2) | Conversational planner onboarding (LLM language-layer + deterministic Go math), inline custom-category creation, re-budget button, neo-brutalist light theme, desktop-optimized layouts + sidebar logout. Verified green (`make test` + `make test-e2e` 37/37). **UNCOMMITTED — see `PLAN.md` NEXT-SESSION STATUS banner.** |
