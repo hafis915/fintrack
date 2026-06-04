@@ -166,4 +166,31 @@ test.describe('Transactions flow', () => {
     await expect(row).toContainText('sewa')
     await expect(row).toContainText(String(yyyy))
   })
+
+  test('add a custom category inline, then log a transaction against it', async ({ page }) => {
+    await page.goto('/transactions')
+    const select = page.getByTestId('tx-new-category')
+    await expect(select.locator('option').first()).toBeAttached({ timeout: 5_000 })
+
+    // The desired category isn't in the catalog → create it on the fly.
+    await page.getByTestId('add-category-toggle').click()
+    await page.getByTestId('add-category-icon').fill('🐱')
+    await page.getByTestId('add-category-name').fill('Kucing')
+    await page.getByTestId('add-category-type').selectOption('variable')
+    await page.getByTestId('add-category-submit').click()
+
+    // The form collapses and the new category is auto-selected in the dropdown.
+    await expect(page.getByTestId('add-category-toggle')).toBeVisible()
+    await expect(select.locator('option', { hasText: 'Kucing' })).toBeAttached()
+    await expect(select.locator('option:checked')).toContainText('Kucing')
+
+    // Logging against the brand-new category works end-to-end.
+    await page.getByTestId('tx-new-amount').fill('45000')
+    await page.getByTestId('tx-new-note').fill('makanan kucing')
+    await page.getByTestId('tx-new-submit').click()
+
+    const row = page.getByTestId('tx-list').locator('li').first()
+    await expect(row).toContainText('Rp 45.000')
+    await expect(row).toContainText('Kucing')
+  })
 })

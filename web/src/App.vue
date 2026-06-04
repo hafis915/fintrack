@@ -37,7 +37,7 @@ const showNav = computed(() => {
     <!-- Mobile bottom tab nav (<lg only). -->
     <nav
       v-if="showNav"
-      class="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface lg:hidden"
+      class="fixed inset-x-0 bottom-0 z-10 border-t-2 border-line bg-surface lg:hidden"
       data-testid="bottom-nav"
     >
       <div class="mx-auto flex max-w-mobile items-center justify-around px-4 py-2">

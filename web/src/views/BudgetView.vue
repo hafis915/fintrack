@@ -20,10 +20,16 @@ const sortedItems = computed(() => {
   return [...budget.value.items].sort((a, b) => statusOrder[a.status] - statusOrder[b.status])
 })
 
+// Brutalist: solid saturated blocks with a black border + black ink.
 const statusClass: Record<FatigueStatus, string> = {
-  fresh: 'text-fresh border-fresh/40 bg-fresh/10',
-  warning: 'text-warning border-warning/40 bg-warning/10',
-  fatigued: 'text-fatigued border-fatigued/40 bg-fatigued/10',
+  fresh: 'bg-fresh text-fg',
+  warning: 'bg-warning text-fg',
+  fatigued: 'bg-fatigued text-fg',
+}
+const barClass: Record<FatigueStatus, string> = {
+  fresh: 'bg-fresh',
+  warning: 'bg-warning',
+  fatigued: 'bg-fatigued',
 }
 
 const statusLabel: Record<FatigueStatus, string> = {
@@ -57,20 +63,40 @@ onMounted(refresh)
 </script>
 
 <template>
-  <section class="mx-auto flex max-w-mobile flex-col gap-6 px-6 py-10" data-testid="budget-view">
-    <header class="space-y-1">
-      <p class="text-xs uppercase tracking-[0.18em] text-muted">Fatigue dashboard</p>
-      <h1 class="font-display text-3xl font-semibold">Budget bulan ini</h1>
-      <p v-if="budget" class="text-sm text-muted" data-testid="budget-period">
-        Periode {{ budget.period }} · {{ PROGRAM_LABELS[budget.program] }}
+  <section
+    class="mx-auto flex w-full max-w-mobile flex-col gap-6 px-6 py-10 lg:max-w-none lg:px-10"
+    data-testid="budget-view"
+  >
+    <header class="space-y-2">
+      <span class="inline-block border-2 border-line bg-fg px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-bg">
+        Fatigue dashboard
+      </span>
+      <h1 class="font-display text-4xl font-extrabold uppercase leading-none tracking-tight">
+        Budget<br />bulan ini
+      </h1>
+      <p v-if="budget" class="font-mono text-sm" data-testid="budget-period">
+        {{ budget.period }} · {{ PROGRAM_LABELS[budget.program] }}
       </p>
+
+      <!-- Re-run the planner to regenerate this month's budget. Safe: the plan
+           is only replaced on the final "Mulai program" submit (idempotent
+           upsert), so navigating here destroys nothing. -->
+      <button
+        v-if="budget"
+        type="button"
+        data-testid="budget-rebudget"
+        class="self-start border-2 border-line bg-surface px-3 py-1.5 text-xs font-bold uppercase shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
+        @click="router.push({ name: 'onboarding' })"
+      >
+        ↻ Atur ulang budget
+      </button>
     </header>
 
     <p v-if="loading" class="font-mono text-sm text-muted">memuat…</p>
 
     <div
       v-else-if="noPlan"
-      class="space-y-3 rounded-card border border-line bg-surface p-5 text-sm text-muted"
+      class="space-y-3 rounded-card border-2 border-line bg-surface p-5 text-sm shadow-brutal"
       data-testid="budget-no-plan"
     >
       <p>
@@ -78,7 +104,7 @@ onMounted(refresh)
       </p>
       <button
         type="button"
-        class="w-full rounded-card bg-saffron py-2 font-semibold text-bg"
+        class="w-full rounded-card border-2 border-line bg-saffron py-2 font-bold uppercase text-fg shadow-brutal active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
         @click="router.push({ name: 'onboarding' })"
       >
         Mulai onboarding
@@ -90,12 +116,16 @@ onMounted(refresh)
     </p>
 
     <template v-else-if="budget">
+      <!-- Desktop: summary + recommendations in a left column, the budget-vs-
+           realisasi graphic gets the wide right column. Stacks on mobile. -->
+      <div class="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:items-start lg:gap-6">
+      <div class="space-y-6 lg:col-span-1">
       <!-- Summary -->
       <div
-        class="space-y-2 rounded-card border border-line bg-surface p-4"
+        class="space-y-3 rounded-card border-2 border-line bg-surface p-4 shadow-brutal"
         data-testid="budget-summary"
       >
-        <p class="text-xs uppercase tracking-wider text-muted">Ringkasan</p>
+        <span class="inline-block bg-fg px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-bg">Ringkasan</span>
         <dl class="space-y-1 font-mono text-sm">
           <div class="flex justify-between">
             <dt class="text-muted">Total pemasukan</dt>
@@ -127,27 +157,34 @@ onMounted(refresh)
 
       <!-- Recommendations — most actionable, near the top -->
       <ReduceSuggestions :items="budget.items" />
+      </div>
+      <!-- /left column -->
 
-      <!-- Budget vs realisasi graphic -->
-      <BudgetCompareChart :items="budget.items" />
+      <!-- Budget vs realisasi graphic (wide column on desktop) -->
+      <div class="lg:col-span-2">
+        <BudgetCompareChart :items="budget.items" />
+      </div>
+      </div>
+      <!-- /summary+chart grid -->
 
       <!-- Items -->
       <div class="space-y-3" data-testid="budget-items">
-        <p class="text-xs uppercase tracking-wider text-muted">Per kategori</p>
+        <span class="inline-block bg-fg px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-bg">Per kategori</span>
+        <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
         <article
           v-for="item in sortedItems"
           :key="item.id"
-          class="space-y-2 rounded-card border border-line bg-surface p-4"
+          class="space-y-2 rounded-card border-2 border-line bg-surface p-4 shadow-brutal"
           :data-testid="`budget-item-${item.category_name}`"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-sm">
+              <p class="text-sm font-semibold">
                 <span class="mr-1">{{ item.category_icon }}</span>
                 {{ item.category_name }}
                 <span
                   v-if="item.is_debt_focus"
-                  class="ml-2 rounded-full bg-fatigued/20 px-2 py-[1px] text-[10px] uppercase tracking-wider text-fatigued"
+                  class="ml-2 border-2 border-line bg-fatigued px-2 py-[1px] text-[10px] font-bold uppercase text-fg"
                 >
                   fokus
                 </span>
@@ -157,28 +194,24 @@ onMounted(refresh)
               </p>
             </div>
             <span
-              :class="['rounded-full border px-2 py-[2px] text-[10px] uppercase tracking-wider', statusClass[item.status]]"
+              :class="['border-2 border-line px-2 py-[2px] text-[10px] font-bold uppercase', statusClass[item.status]]"
               :data-testid="`budget-item-${item.category_name}-status`"
             >
               {{ statusLabel[item.status] }}
             </span>
           </div>
 
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-bg">
+          <div class="h-3 w-full overflow-hidden border-2 border-line bg-bg">
             <div
-              :class="['h-full transition-all', {
-                'bg-fresh': item.status === 'fresh',
-                'bg-warning': item.status === 'warning',
-                'bg-fatigued': item.status === 'fatigued',
-              }]"
+              :class="['h-full transition-all motion-reduce:transition-none', barClass[item.status]]"
               :style="{ width: Math.min(item.percentage_used, 100) + '%' }"
             />
           </div>
 
           <div class="flex items-center justify-between text-xs">
-            <span class="font-mono text-muted">{{ item.percentage_used.toFixed(1) }}% dipakai</span>
+            <span class="font-mono font-semibold">{{ item.percentage_used.toFixed(1) }}% dipakai</span>
             <span
-              :class="item.remaining < 0 ? 'text-fatigued font-mono' : 'text-muted font-mono'"
+              :class="item.remaining < 0 ? 'font-mono font-bold text-fatigued' : 'font-mono text-muted'"
             >
               sisa {{ formatRp(item.remaining) }}
             </span>
@@ -186,12 +219,13 @@ onMounted(refresh)
 
           <p v-if="item.coaching" class="text-xs text-muted">{{ item.coaching }}</p>
         </article>
+        </div>
       </div>
     </template>
 
     <button
       type="button"
-      class="text-xs text-muted hover:text-saffron"
+      class="self-start border-2 border-line bg-surface px-3 py-2 text-xs font-bold uppercase shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
       @click="router.push({ name: 'transactions' })"
     >
       → catat transaksi

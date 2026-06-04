@@ -35,14 +35,14 @@ function formatRp(n: number): string {
 
 <template>
   <section
-    class="space-y-3 rounded-card border border-line bg-surface p-4"
+    class="space-y-3 rounded-card border-2 border-line bg-surface p-4 shadow-brutal"
     data-testid="budget-recommendations"
   >
-    <p class="text-xs uppercase tracking-wider text-muted">Saran bulan ini</p>
+    <span class="inline-block border-2 border-line bg-saffron px-2 py-[2px] text-[10px] font-bold uppercase text-fg">Saran bulan ini</span>
 
     <p
       v-if="suggestions.length === 0"
-      class="text-sm text-fresh"
+      class="text-sm font-semibold text-fresh"
       data-testid="reco-on-track"
     >
       Mantap — semua kategori masih on track bulan ini.
@@ -56,7 +56,7 @@ function formatRp(n: number): string {
         :data-testid="`reco-item-${item.category_name}`"
       >
         <span class="mr-1">{{ item.category_icon }}</span>
-        <span class="font-medium">{{ item.category_name }}</span>
+        <span class="font-bold">{{ item.category_name }}</span>
         <template v-if="overspend > 0">
           — lebih
           <span class="font-mono text-fatigued">{{ formatRp(overspend) }}</span

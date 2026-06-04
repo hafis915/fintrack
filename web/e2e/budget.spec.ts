@@ -114,4 +114,30 @@ test.describe('Budget / fatigue dashboard', () => {
     await expect(page.getByTestId('budget-compare-chart')).toBeVisible()
     await expect(page.getByTestId('compare-row-Makan & minum')).toBeVisible()
   })
+
+  // An already-onboarded user can re-run the planner from the budget dashboard.
+  test('re-budget button sends an onboarded user back into the planner', async ({ page }) => {
+    const { userId } = await authedSession(page)
+
+    seedUser(userId)
+    const cats = getDefaultCategoryIDs()
+    seedBudgetPlan({
+      userId,
+      income: 8_000_000,
+      program: 'seimbang',
+      items: [{ categoryId: cats['Makan & minum'], allocated: 1_000_000, percentage: 12.5 }],
+    })
+
+    await page.goto('/budget')
+    await expect(page.getByTestId('budget-summary')).toBeVisible()
+
+    // The re-budget affordance is only shown once a plan exists.
+    const rebudget = page.getByTestId('budget-rebudget')
+    await expect(rebudget).toBeVisible()
+    await rebudget.click()
+
+    // Lands back on step 1 of the onboarding planner.
+    await expect(page).toHaveURL(/\/onboarding$/)
+    await expect(page.getByTestId('onb-step-1')).toBeVisible()
+  })
 })

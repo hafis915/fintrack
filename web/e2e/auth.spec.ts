@@ -199,6 +199,32 @@ test.describe('Auth flow', () => {
     const token = await page.evaluate((k) => localStorage.getItem(k), TOKEN_KEY)
     expect(token, 'token should be cleared on logout').toBeNull()
   })
+
+  test('desktop: logout lives in the sidebar navbar and clears the session', async ({ page }) => {
+    // On a wide viewport the bottom nav is replaced by the left sidebar, which
+    // is where Keluar now lives (the home-header button is mobile-only).
+    await page.setViewportSize({ width: 1280, height: 800 })
+
+    await page.goto('/register')
+    const email = uniqueEmail()
+    await page.getByTestId('register-name').fill('Desktop Logout')
+    await page.getByTestId('register-email').fill(email)
+    await page.getByTestId('register-password').fill('supersecret123')
+    await page.getByTestId('register-submit').click()
+    await expect(page).toHaveURL(/\/onboarding$/)
+
+    await page.goto('/')
+    await expect(page.getByTestId('home-view')).toBeVisible()
+
+    // The sidebar logout is visible on desktop; the header one is hidden.
+    await expect(page.getByTestId('sidebar-logout')).toBeVisible()
+    await expect(page.getByTestId('home-logout')).toBeHidden()
+    await page.getByTestId('sidebar-logout').click()
+
+    await expect(page).toHaveURL(/\/login$/)
+    const token = await page.evaluate((k) => localStorage.getItem(k), TOKEN_KEY)
+    expect(token, 'token should be cleared on logout').toBeNull()
+  })
 })
 
 /**
@@ -224,17 +250,19 @@ test.describe('Bug #3 — cleared numeric field guards', () => {
     })
 
     await page.goto('/onboarding')
-    await expect(page.getByText('memuat kategori…')).toBeHidden({ timeout: 5_000 })
+    await expect(page.getByTestId('onb-step-1')).toBeVisible()
 
-    // Clear the income field entirely (cleared number input → "").
+    // Step 1: clear the income field entirely, then try to advance. The client
+    // guard catches the empty/zero income before any API call.
     await page.getByTestId('onb-income').fill('')
-    await page.getByTestId('onb-submit').click()
+    await page.getByTestId('onb-next').click()
 
-    // Inline validation appears, we stay on /onboarding.
+    // Inline validation appears, we stay on step 1 / /onboarding.
     await expect(page.getByTestId('onb-error')).toBeVisible()
+    await expect(page.getByTestId('onb-step-1')).toBeVisible()
     await expect(page).toHaveURL(/\/onboarding$/)
 
-    // The guard short-circuits before any submit request, so no 400 hit the API.
+    // The guard short-circuits before any suggest/submit request, so no 400 hit the API.
     expect(
       badResponses,
       `unexpected API errors: ${badResponses.join(', ')}`,

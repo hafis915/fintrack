@@ -9,6 +9,7 @@ import {
   updateTransaction,
   type Transaction,
 } from '@/api/transactions'
+import AddCategoryInline from '@/components/AddCategoryInline.vue'
 
 const router = useRouter()
 
@@ -123,6 +124,13 @@ onMounted(async () => {
   await refresh()
 })
 
+// A newly-created category joins the dropdown and becomes the active selection,
+// so the user can log against it immediately.
+function onCategoryCreated(c: Category) {
+  categories.value = [...categories.value, c]
+  newCategoryId.value = c.id
+}
+
 async function onCreate() {
   if (!newCategoryId.value || newAmount.value <= 0) {
     errorMsg.value = 'Pilih kategori + isi jumlah dulu.'
@@ -211,20 +219,25 @@ function formatDate(iso: string): string {
 
 <template>
   <section
-    class="mx-auto flex max-w-mobile flex-col gap-6 px-6 py-10"
+    class="mx-auto flex w-full max-w-mobile flex-col gap-6 px-6 py-10 lg:max-w-none lg:px-10"
     data-testid="transactions-view"
   >
     <header class="space-y-1">
       <p class="text-xs uppercase tracking-[0.18em] text-muted">Catatan</p>
-      <h1 class="font-display text-3xl font-semibold">Transaksi</h1>
+      <h1 class="font-display text-3xl font-semibold lg:text-4xl">Transaksi</h1>
       <p class="text-sm text-muted" data-testid="tx-total">
         {{ total }} transaksi
       </p>
     </header>
 
+    <!-- Desktop: the create form sits in a sticky left rail, the list takes the
+         wide right column. Stacks on mobile. -->
+    <div class="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:items-start lg:gap-6">
+    <!-- Left rail: create + add category. -->
+    <div class="space-y-4 lg:col-span-1 lg:sticky lg:top-6">
     <!-- Inline create form -->
     <form
-      class="space-y-3 rounded-card border border-line bg-surface p-4"
+      class="space-y-3 rounded-card border-2 border-line bg-surface p-4 shadow-brutal"
       data-testid="tx-new-form"
       novalidate
       @submit.prevent="onCreate"
@@ -240,6 +253,9 @@ function formatDate(iso: string): string {
           {{ c.icon }} {{ c.name }}
         </option>
       </select>
+
+      <!-- Add a category on the fly when the one you need isn't listed. -->
+      <AddCategoryInline show-type-picker default-type="variable" @created="onCategoryCreated" />
 
       <!-- Date the transaction happened (default today; past dates allowed) -->
       <label class="block">
@@ -279,17 +295,22 @@ function formatDate(iso: string): string {
       <button
         type="submit"
         data-testid="tx-new-submit"
-        class="w-full rounded-card bg-saffron py-2 text-sm font-semibold text-bg"
+        class="flex w-full items-center justify-center gap-2 rounded-card border-2 border-line bg-saffron py-3 text-sm font-bold uppercase text-fg shadow-brutal active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
       >
-        Tambah
+        <span aria-hidden="true">＋</span>
+        <span>Tambah transaksi</span>
       </button>
     </form>
 
     <p v-if="errorMsg" class="text-sm text-fatigued" data-testid="tx-error">{{ errorMsg }}</p>
+    </div>
+    <!-- /left rail -->
 
+    <!-- Right column: month filter + list. -->
+    <div class="space-y-6 lg:col-span-2">
     <!-- Month filter -->
     <div
-      class="flex items-center justify-between rounded-card border border-line bg-surface px-3 py-2"
+      class="flex items-center justify-between rounded-card border-2 border-line bg-surface px-3 py-2 shadow-brutal-sm"
       data-testid="tx-month-filter"
     >
       <button
@@ -329,11 +350,11 @@ function formatDate(iso: string): string {
       Belum ada transaksi.
     </div>
 
-    <ul v-else class="space-y-2" data-testid="tx-list">
+    <ul v-else class="grid gap-2 lg:grid-cols-2" data-testid="tx-list">
       <li
         v-for="tx in transactions"
         :key="tx.id"
-        class="rounded-card border border-line bg-surface p-3"
+        class="rounded-card border-2 border-line bg-surface p-3 shadow-brutal-sm"
         :data-testid="`tx-row-${tx.id}`"
       >
         <template v-if="editingId === tx.id">
@@ -397,22 +418,22 @@ function formatDate(iso: string): string {
               <p class="font-mono text-sm" :data-testid="`tx-row-${tx.id}-amount`">
                 {{ formatRp(tx.amount) }}
               </p>
-              <div class="mt-1 flex justify-end gap-2 text-xs">
+              <div class="mt-2 flex justify-end gap-2">
                 <button
                   type="button"
-                  class="text-muted hover:text-saffron"
+                  class="flex items-center gap-1 rounded-card border-2 border-line bg-surface px-2.5 py-1 text-[11px] font-bold uppercase shadow-brutal-sm transition-colors hover:bg-saffron active:translate-x-[1px] active:translate-y-[1px] active:shadow-none motion-reduce:transform-none"
                   :data-testid="`tx-row-${tx.id}-edit`"
                   @click="startEdit(tx)"
                 >
-                  edit
+                  <span aria-hidden="true">✏️</span><span>Edit</span>
                 </button>
                 <button
                   type="button"
-                  class="text-muted hover:text-fatigued"
+                  class="flex items-center gap-1 rounded-card border-2 border-line bg-surface px-2.5 py-1 text-[11px] font-bold uppercase shadow-brutal-sm transition-colors hover:bg-fatigued hover:text-fg active:translate-x-[1px] active:translate-y-[1px] active:shadow-none motion-reduce:transform-none"
                   :data-testid="`tx-row-${tx.id}-delete`"
                   @click="onDelete(tx)"
                 >
-                  hapus
+                  <span aria-hidden="true">🗑️</span><span>Hapus</span>
                 </button>
               </div>
             </div>
@@ -420,6 +441,10 @@ function formatDate(iso: string): string {
         </template>
       </li>
     </ul>
+    </div>
+    <!-- /right column -->
+    </div>
+    <!-- /grid -->
 
     <button
       type="button"

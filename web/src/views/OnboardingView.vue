@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createCategory, listCategories, type Category, type ExpenseType } from '@/api/categories'
+import { listCategories, type Category } from '@/api/categories'
 import {
   submitOnboarding,
   type DebtType,
@@ -10,23 +10,24 @@ import {
   type LifestyleStyle,
   type OnboardingItem,
 } from '@/api/onboarding'
-import { useOnboardingStore, type OnboardingAnswers } from '@/stores/onboarding'
-
-interface DraftItem {
-  category: Category
-  amount: number
-  enabled: boolean
-}
+import {
+  plannerChat,
+  suggestPlan,
+  type PlannerMessage,
+  type SuggestResponse,
+} from '@/api/planner'
+import { useOnboardingStore } from '@/stores/onboarding'
+import PlannerChat from '@/components/PlannerChat.vue'
+import AddCategoryInline from '@/components/AddCategoryInline.vue'
 
 const router = useRouter()
 const store = useOnboardingStore()
 
-const categories = ref<Category[]>([])
-const loadingCats = ref(true)
-const submitting = ref(false)
-const submitError = ref<string | null>(null)
+// --- Step machine ---
+type Step = 1 | 2 | 3
+const step = ref<Step>(1)
 
-// Form state — defaults chosen to be safe to submit immediately in tests.
+// --- Step 1: questions ---
 const income = ref<number>(8_000_000)
 const housingType = ref<HousingType>('kpr')
 const goal = ref<Goal>('debt')
@@ -34,122 +35,79 @@ const debtTypes = ref<DebtType[]>(['cc'])
 const emergencyMonths = ref<0 | 1 | 3 | 6>(1)
 const lifestyleStyle = ref<LifestyleStyle>('balanced')
 
-const drafts = ref<DraftItem[]>([])
+// --- Categories split by negotiability ---
+const categories = ref<Category[]>([])
+const loadingCats = ref(true)
+const loadError = ref<string | null>(null)
 
-const groupedDrafts = computed(() => {
-  const groups: Record<ExpenseType, DraftItem[]> = { fixed: [], variable: [], debt: [], want: [] }
-  for (const d of drafts.value) groups[d.category.type].push(d)
-  return groups
-})
-
-// Live running total of declared expenses, and how far it exceeds income.
-// Surfaced as coaching feedback — overspending is allowed (the result page
-// coaches it), so this never blocks submission.
-const totalExpenses = computed(() =>
-  drafts.value
-    .filter((d) => d.enabled && d.amount > 0)
-    .reduce((sum, d) => sum + (Number(d.amount) || 0), 0),
+// Fixed/debt = non-negotiable (the user types these in step 2).
+const fixedCategories = computed(() =>
+  categories.value.filter((c) => c.type === 'fixed' || c.type === 'debt'),
 )
-const overBy = computed(() => totalExpenses.value - (Number(income.value) || 0))
+
+// --- Step 2: fixed amounts keyed by category id ---
+const fixedAmounts = ref<Record<string, number>>({})
+
+const fixedTotal = computed(() =>
+  fixedCategories.value.reduce((sum, c) => sum + (Number(fixedAmounts.value[c.id]) || 0), 0),
+)
+
+// --- Step 3: plan (suggested flexible amounts + summary) ---
+const plan = ref<SuggestResponse | null>(null)
+const suggesting = ref(false)
+const suggestError = ref<string | null>(null)
+// Editable flexible amounts keyed by category id (seeded from the suggestion,
+// then mutated by inline edits + the planner chat).
+const flexibleAmounts = ref<Record<string, number>>({})
+const savingsTarget = ref<number>(0)
+
+// Live discretionary total the user has allocated across flexible cats.
+const flexibleTotal = computed(() =>
+  (plan.value?.flexible ?? []).reduce(
+    (sum, f) => sum + (Number(flexibleAmounts.value[f.category_id]) || 0),
+    0,
+  ),
+)
+
+// Residual = what actually persists as savings (income - fixed - flexible).
+const residualSavings = computed(() => income.value - fixedTotal.value - flexibleTotal.value)
+
+// --- Planner chat thread ---
+const messages = ref<PlannerMessage[]>([])
+const chatPending = ref(false)
 
 function formatRp(n: number): string {
   return 'Rp ' + Math.round(n).toLocaleString('id-ID')
 }
 
-onMounted(async () => {
-  try {
-    categories.value = await listCategories()
-    // Rehydrate the user's previous answers (e.g. after "Ubah jawaban")
-    // instead of resetting to defaults. Scalars first, then per-item state
-    // merged onto the freshly loaded categories by category_id.
-    const saved = store.answers
-    if (saved) {
-      income.value = saved.income
-      housingType.value = saved.housingType
-      goal.value = saved.goal
-      debtTypes.value = [...saved.debtTypes]
-      emergencyMonths.value = saved.emergencyMonths
-      lifestyleStyle.value = saved.lifestyleStyle
-    }
-    drafts.value = categories.value.map((c) => {
-      const savedItem = saved?.items[c.id]
-      return {
-        category: c,
-        // Restore the user's amount/enabled if we have it; otherwise pre-fill
-        // plausible type-specific defaults for a quick first-time path.
-        amount: savedItem ? savedItem.amount : defaultAmountFor(c),
-        enabled: savedItem ? savedItem.enabled : defaultEnabledFor(c),
-      }
-    })
-  } catch (err) {
-    submitError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    loadingCats.value = false
-  }
-})
-
-// Snapshot the current form so the result page's "Ubah jawaban" can restore it.
-function snapshotAnswers(): OnboardingAnswers {
-  const items: Record<string, { amount: number; enabled: boolean }> = {}
-  for (const d of drafts.value) {
-    items[d.category.id] = { amount: Number(d.amount) || 0, enabled: d.enabled }
-  }
-  return {
-    income: income.value,
-    housingType: housingType.value,
-    goal: goal.value,
-    debtTypes: [...debtTypes.value],
-    emergencyMonths: emergencyMonths.value,
-    lifestyleStyle: lifestyleStyle.value,
-    items,
-  }
+// Parse a "Rp 1.500.000" / "1500000" string back to an integer.
+function parseAmount(raw: string): number {
+  const digits = raw.replace(/[^\d]/g, '')
+  return digits ? Number(digits) : 0
 }
 
-function defaultAmountFor(c: Category): number {
-  if (c.name === 'Cicilan KPR') return 1_500_000
-  if (c.name === 'Sewa kosan') return 1_200_000
-  if (c.name === 'Makan & minum') return 1_200_000
-  if (c.name === 'Kartu kredit') return 400_000
-  if (c.name === 'Hiburan') return 500_000
-  return 0
+// Bind an amount input to a record entry, formatting with thousand separators.
+function fixedAmountDisplay(id: string): string {
+  const v = fixedAmounts.value[id]
+  return v ? v.toLocaleString('id-ID') : ''
+}
+function onFixedAmountInput(id: string, e: Event) {
+  fixedAmounts.value[id] = parseAmount((e.target as HTMLInputElement).value)
 }
 
-function defaultEnabledFor(c: Category): boolean {
-  return ['Cicilan KPR', 'Makan & minum', 'Kartu kredit', 'Hiburan'].includes(c.name)
+function flexibleAmountDisplay(id: string): string {
+  const v = flexibleAmounts.value[id]
+  return v ? v.toLocaleString('id-ID') : ''
+}
+function onFlexibleAmountInput(id: string, e: Event) {
+  flexibleAmounts.value[id] = parseAmount((e.target as HTMLInputElement).value)
 }
 
-// --- Add a custom expense the default seed doesn't cover ---
-const newExpName = ref('')
-const newExpType = ref<ExpenseType>('variable')
-const newExpAmount = ref<number>(0)
-const addingExp = ref(false)
-const addError = ref<string | null>(null)
-
-async function addCustomExpense() {
-  addError.value = null
-  const name = newExpName.value.trim()
-  if (!name) {
-    addError.value = 'Isi nama pengeluaran dulu.'
-    return
-  }
-  const amt = Number(newExpAmount.value)
-  if (!Number.isFinite(amt) || amt <= 0) {
-    addError.value = 'Isi jumlah lebih dari 0.'
-    return
-  }
-  addingExp.value = true
-  try {
-    const cat = await createCategory({ name, type: newExpType.value })
-    categories.value.push(cat)
-    drafts.value.push({ category: cat, amount: amt, enabled: true })
-    newExpName.value = ''
-    newExpAmount.value = 0
-    newExpType.value = 'variable'
-  } catch (err) {
-    addError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    addingExp.value = false
-  }
+function incomeDisplay(): string {
+  return income.value ? income.value.toLocaleString('id-ID') : ''
+}
+function onIncomeInput(e: Event) {
+  income.value = parseAmount((e.target as HTMLInputElement).value)
 }
 
 function toggleDebt(t: DebtType) {
@@ -158,36 +116,203 @@ function toggleDebt(t: DebtType) {
   else debtTypes.value.splice(i, 1)
 }
 
-async function onSubmit() {
-  submitError.value = null
+onMounted(async () => {
+  try {
+    categories.value = await listCategories()
+    // Seed fixed amounts from any previously-saved answers.
+    const saved = store.answers
+    if (saved) {
+      income.value = saved.income
+      housingType.value = saved.housingType
+      goal.value = saved.goal
+      debtTypes.value = [...saved.debtTypes]
+      emergencyMonths.value = saved.emergencyMonths
+      lifestyleStyle.value = saved.lifestyleStyle
+      for (const c of fixedCategories.value) {
+        const item = saved.items[c.id]
+        if (item) fixedAmounts.value[c.id] = item.amount
+      }
+    }
+    // Pre-fill plausible defaults for the common non-negotiables.
+    for (const c of fixedCategories.value) {
+      if (fixedAmounts.value[c.id] === undefined) {
+        fixedAmounts.value[c.id] = defaultFixedFor(c)
+      }
+    }
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err)
+  } finally {
+    loadingCats.value = false
+  }
+})
 
-  // Guard income before hitting the API. A cleared number field serializes
-  // as "" and the backend rejects it as invalid_json (bug #3) — catch it
-  // here with a friendly message instead. Number() normalizes NaN/empty.
-  const incomeValue = Number(income.value)
-  if (!Number.isFinite(incomeValue) || incomeValue < 100_000) {
-    income.value = incomeValue
-    submitError.value = 'Isi pemasukan bulanan minimal Rp 100.000.'
+// A freshly-created custom category joins the in-memory list; the fixedCategories
+// computed picks it up automatically (it filters on type). Seed a zero amount so
+// the new row renders an empty, editable input.
+function onFixedCategoryCreated(c: Category) {
+  categories.value = [...categories.value, c]
+  if (fixedAmounts.value[c.id] === undefined) fixedAmounts.value[c.id] = 0
+}
+
+function defaultFixedFor(c: Category): number {
+  if (c.name === 'Cicilan KPR') return 1_500_000
+  if (c.name === 'Sewa kosan') return 1_200_000
+  if (c.name === 'Kartu kredit') return 400_000
+  return 0
+}
+
+// Persist the wizard answers (incl. fixed amounts) so a remount restores them.
+function persistAnswers() {
+  const items: Record<string, { amount: number; enabled: boolean }> = {}
+  for (const c of fixedCategories.value) {
+    items[c.id] = { amount: Number(fixedAmounts.value[c.id]) || 0, enabled: true }
+  }
+  store.setAnswers({
+    income: income.value,
+    housingType: housingType.value,
+    goal: goal.value,
+    debtTypes: [...debtTypes.value],
+    emergencyMonths: emergencyMonths.value,
+    lifestyleStyle: lifestyleStyle.value,
+    items,
+  })
+}
+
+// --- Navigation ---
+function goNext() {
+  loadError.value = null
+  if (step.value === 1) {
+    if (!Number.isFinite(income.value) || income.value < 100_000) {
+      loadError.value = 'Isi pemasukan bulanan minimal Rp 100.000.'
+      return
+    }
+    persistAnswers()
+    step.value = 2
     return
   }
-  income.value = incomeValue
+  if (step.value === 2) {
+    persistAnswers()
+    step.value = 3
+    void loadSuggestion()
+  }
+}
 
-  // Persist answers up front so "Ubah jawaban" restores them even if the
-  // request fails or the user navigates back without resubmitting.
-  store.setAnswers(snapshotAnswers())
+function goBack() {
+  if (step.value === 2) step.value = 1
+  else if (step.value === 3) step.value = 2
+}
 
+// Call the deterministic suggest endpoint on entering step 3.
+async function loadSuggestion() {
+  suggesting.value = true
+  suggestError.value = null
+  try {
+    const fixed_items = fixedCategories.value.map((c) => ({
+      category_id: c.id,
+      name: c.name,
+      icon: c.icon,
+      type: c.type,
+      amount: Number(fixedAmounts.value[c.id]) || 0,
+    }))
+    const res = await suggestPlan({
+      income: income.value,
+      housing_type: housingType.value,
+      goal: goal.value,
+      debt_types: debtTypes.value,
+      emergency_months: emergencyMonths.value,
+      lifestyle_style: lifestyleStyle.value,
+      fixed_items,
+    })
+    plan.value = res
+    savingsTarget.value = res.savings_target
+    // Seed the editable flexible amounts from the suggestion.
+    const seeded: Record<string, number> = {}
+    for (const f of res.flexible) seeded[f.category_id] = f.suggested_amount
+    flexibleAmounts.value = seeded
+  } catch (err) {
+    suggestError.value = err instanceof Error ? err.message : String(err)
+  } finally {
+    suggesting.value = false
+  }
+}
+
+// --- Planner chat send: deterministic re-balance happens server-side ---
+async function onChatSend(text: string) {
+  if (!plan.value) return
+  messages.value.push({ role: 'user', content: text })
+  chatPending.value = true
+  try {
+    const res = await plannerChat({
+      income: income.value,
+      goal: goal.value,
+      lifestyle_style: lifestyleStyle.value,
+      savings_target: savingsTarget.value,
+      fixed_items: fixedCategories.value.map((c) => ({
+        category_id: c.id,
+        name: c.name,
+        amount: Number(fixedAmounts.value[c.id]) || 0,
+      })),
+      flexible: plan.value.flexible.map((f) => ({
+        category_id: f.category_id,
+        name: f.name,
+        amount: Number(flexibleAmounts.value[f.category_id]) || 0,
+      })),
+      messages: messages.value,
+      user_message: text,
+    })
+    messages.value.push({ role: 'assistant', content: res.reply })
+    // Apply the server's re-balanced numbers (the AI never invents these).
+    if (res.changed) {
+      for (const f of res.flexible) flexibleAmounts.value[f.category_id] = f.amount
+      savingsTarget.value = res.savings_target
+    }
+  } catch (err) {
+    messages.value.push({
+      role: 'assistant',
+      content: err instanceof Error ? err.message : 'Planner lagi error, coba lagi ya.',
+    })
+  } finally {
+    chatPending.value = false
+  }
+}
+
+// --- Confirm: persist via the EXISTING finalize endpoint ---
+const submitting = ref(false)
+const submitError = ref<string | null>(null)
+
+async function onSubmit() {
+  submitError.value = null
+  if (!plan.value) return
+  persistAnswers()
   submitting.value = true
   try {
-    const expense_items: OnboardingItem[] = drafts.value
-      .filter((d) => d.enabled && d.amount > 0)
-      .map((d) => ({
-        category_id: d.category.id,
-        name: d.category.name,
-        icon: d.category.icon,
-        type: d.category.type,
-        amount: d.amount,
-      }))
-
+    const expense_items: OnboardingItem[] = []
+    // Fixed/debt items (non-zero only).
+    for (const c of fixedCategories.value) {
+      const amt = Number(fixedAmounts.value[c.id]) || 0
+      if (amt > 0) {
+        expense_items.push({
+          category_id: c.id,
+          name: c.name,
+          icon: c.icon,
+          type: c.type,
+          amount: amt,
+        })
+      }
+    }
+    // Final flexible items (non-zero only).
+    for (const f of plan.value.flexible) {
+      const amt = Number(flexibleAmounts.value[f.category_id]) || 0
+      if (amt > 0) {
+        expense_items.push({
+          category_id: f.category_id,
+          name: f.name,
+          icon: f.icon,
+          type: f.type,
+          amount: amt,
+        })
+      }
+    }
     const resp = await submitOnboarding({
       income: income.value,
       housing_type: housingType.value,
@@ -212,58 +337,65 @@ async function onSubmit() {
     class="mx-auto flex max-w-mobile flex-col gap-6 px-6 py-10"
     data-testid="onboarding-view"
   >
-    <header class="space-y-1">
-      <p class="text-xs uppercase tracking-[0.18em] text-muted">Onboarding</p>
-      <h1 class="font-display text-3xl font-semibold">Mulai program-mu</h1>
-      <p class="text-sm text-muted">Jawab 6 pertanyaan singkat. Kami susun budget yang pas.</p>
+    <header class="space-y-2">
+      <span class="inline-block border-2 border-line bg-fg px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-bg">
+        Langkah {{ step }} / 3
+      </span>
+      <h1 class="font-display text-4xl font-extrabold uppercase leading-none tracking-tight">
+        Susun<br />programmu
+      </h1>
+      <p class="border-l-4 border-saffron pl-3 text-sm font-medium">
+        Bukan form — ini financial planner. Kamu yang pegang kemudi.
+      </p>
     </header>
 
-    <form novalidate class="space-y-5" @submit.prevent="onSubmit">
+    <p v-if="loadError" class="text-sm text-fatigued" data-testid="onb-error">{{ loadError }}</p>
+
+    <!-- ============ STEP 1 — QUESTIONS ============ -->
+    <div v-if="step === 1" class="space-y-5" data-testid="onb-step-1">
       <!-- Q1: income -->
       <fieldset class="space-y-2">
-        <label class="text-xs uppercase tracking-wider text-muted" for="income">
+        <label class="text-xs font-bold uppercase tracking-wider text-muted" for="income">
           1. Pemasukan bulanan
         </label>
-        <input
-          id="income"
-          v-model.number="income"
-          type="number"
-          min="100000"
-          step="100000"
-          data-testid="onb-income"
-          class="w-full rounded-card border border-line bg-surface px-4 py-3 font-mono text-lg focus:border-saffron focus:outline-none"
-        />
+        <div class="flex items-center rounded-card border-2 border-line bg-surface px-4 py-3 shadow-brutal focus-within:border-saffron">
+          <span class="mr-2 font-mono text-lg font-bold text-saffron">Rp</span>
+          <input
+            id="income"
+            :value="incomeDisplay()"
+            inputmode="numeric"
+            data-testid="onb-income"
+            class="w-full bg-transparent font-mono text-lg focus:outline-none"
+            @input="onIncomeInput"
+          />
+        </div>
       </fieldset>
 
       <!-- Q2: housing -->
       <fieldset class="space-y-2">
-        <legend class="text-xs uppercase tracking-wider text-muted">2. Tempat tinggal</legend>
+        <legend class="text-xs font-bold uppercase tracking-wider text-muted">2. Tempat tinggal</legend>
         <div class="grid grid-cols-3 gap-2">
-          <label
+          <button
             v-for="opt in (['kosan', 'kpr', 'keluarga'] as HousingType[])"
             :key="opt"
-            class="cursor-pointer rounded-card border border-line bg-surface px-3 py-2 text-center text-sm capitalize hover:border-saffron"
-            :class="housingType === opt ? 'border-saffron text-saffron' : ''"
+            type="button"
+            class="rounded-card border-2 border-line px-3 py-2 text-center text-sm font-bold uppercase shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
+            :class="housingType === opt ? 'bg-saffron text-fg' : 'bg-surface'"
+            :data-testid="`onb-housing-${opt}`"
+            @click="housingType = opt"
           >
-            <input
-              v-model="housingType"
-              type="radio"
-              :value="opt"
-              class="sr-only"
-              :data-testid="`onb-housing-${opt}`"
-            />
             {{ opt }}
-          </label>
+          </button>
         </div>
       </fieldset>
 
       <!-- Q3: goal -->
       <fieldset class="space-y-2">
-        <legend class="text-xs uppercase tracking-wider text-muted">3. Goal utama</legend>
+        <legend class="text-xs font-bold uppercase tracking-wider text-muted">3. Goal utama</legend>
         <select
           v-model="goal"
           data-testid="onb-goal"
-          class="w-full rounded-card border border-line bg-surface px-3 py-3 capitalize focus:border-saffron focus:outline-none"
+          class="w-full rounded-card border-2 border-line bg-surface px-3 py-3 text-sm font-semibold shadow-brutal-sm focus:border-saffron focus:outline-none"
         >
           <option value="emergency">Bangun dana darurat</option>
           <option value="debt">Bebas dari utang</option>
@@ -275,14 +407,14 @@ async function onSubmit() {
 
       <!-- Q4: debt types (multi) -->
       <fieldset class="space-y-2">
-        <legend class="text-xs uppercase tracking-wider text-muted">4. Jenis utang aktif</legend>
+        <legend class="text-xs font-bold uppercase tracking-wider text-muted">4. Jenis utang aktif</legend>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="opt in (['none', 'cc', 'paylater', 'multi'] as DebtType[])"
             :key="opt"
             type="button"
-            class="rounded-full border border-line bg-surface px-3 py-1 text-sm capitalize hover:border-saffron"
-            :class="debtTypes.includes(opt) ? 'border-saffron bg-saffron/10 text-saffron' : ''"
+            class="rounded-card border-2 border-line px-3 py-1.5 text-sm font-bold uppercase shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
+            :class="debtTypes.includes(opt) ? 'bg-saffron text-fg' : 'bg-surface'"
             :data-testid="`onb-debt-${opt}`"
             @click="toggleDebt(opt)"
           >
@@ -293,167 +425,208 @@ async function onSubmit() {
 
       <!-- Q5: emergency months -->
       <fieldset class="space-y-2">
-        <legend class="text-xs uppercase tracking-wider text-muted">
-          5. Dana darurat sekarang
-        </legend>
+        <legend class="text-xs font-bold uppercase tracking-wider text-muted">5. Dana darurat sekarang</legend>
         <div class="grid grid-cols-4 gap-2">
-          <label
-            v-for="opt in [0, 1, 3, 6]"
+          <button
+            v-for="opt in ([0, 1, 3, 6] as (0 | 1 | 3 | 6)[])"
             :key="opt"
-            class="cursor-pointer rounded-card border border-line bg-surface py-2 text-center text-sm hover:border-saffron"
-            :class="emergencyMonths === opt ? 'border-saffron text-saffron' : ''"
+            type="button"
+            class="rounded-card border-2 border-line py-2 text-center text-sm font-bold uppercase shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
+            :class="emergencyMonths === opt ? 'bg-saffron text-fg' : 'bg-surface'"
+            :data-testid="`onb-emergency-${opt}`"
+            @click="emergencyMonths = opt"
           >
-            <input
-              v-model.number="emergencyMonths"
-              type="radio"
-              :value="opt"
-              class="sr-only"
-              :data-testid="`onb-emergency-${opt}`"
-            />
-            {{ opt === 0 ? '0 bln' : `${opt} bln` }}
-          </label>
+            {{ opt }} bln
+          </button>
         </div>
       </fieldset>
 
       <!-- Q6: lifestyle -->
       <fieldset class="space-y-2">
-        <legend class="text-xs uppercase tracking-wider text-muted">6. Gaya hidup</legend>
+        <legend class="text-xs font-bold uppercase tracking-wider text-muted">6. Gaya hidup</legend>
         <div class="grid grid-cols-3 gap-2">
-          <label
+          <button
             v-for="opt in (['easy', 'balanced', 'strict'] as LifestyleStyle[])"
             :key="opt"
-            class="cursor-pointer rounded-card border border-line bg-surface px-3 py-2 text-center text-sm capitalize hover:border-saffron"
-            :class="lifestyleStyle === opt ? 'border-saffron text-saffron' : ''"
+            type="button"
+            class="rounded-card border-2 border-line px-3 py-2 text-center text-sm font-bold uppercase shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
+            :class="lifestyleStyle === opt ? 'bg-saffron text-fg' : 'bg-surface'"
+            :data-testid="`onb-lifestyle-${opt}`"
+            @click="lifestyleStyle = opt"
           >
-            <input
-              v-model="lifestyleStyle"
-              type="radio"
-              :value="opt"
-              class="sr-only"
-              :data-testid="`onb-lifestyle-${opt}`"
-            />
             {{ opt }}
-          </label>
+          </button>
         </div>
       </fieldset>
+    </div>
 
-      <!-- Expense items -->
-      <fieldset class="space-y-3" data-testid="onb-items">
-        <legend class="text-xs uppercase tracking-wider text-muted">
-          7. Pengeluaran bulanan kamu
-        </legend>
-        <p v-if="loadingCats" class="font-mono text-sm text-muted">memuat kategori…</p>
-
-        <div v-else class="space-y-4">
-          <div v-for="(items, type) in groupedDrafts" :key="type" class="space-y-2">
-            <p class="text-[10px] uppercase tracking-[0.2em] text-muted">{{ type }}</p>
-            <div
-              v-for="d in items"
-              :key="d.category.id"
-              class="flex items-center gap-3 rounded-card border border-line bg-surface px-3 py-2"
-            >
-              <input
-                v-model="d.enabled"
-                type="checkbox"
-                :data-testid="`onb-item-enable-${d.category.name}`"
-                class="h-4 w-4 accent-saffron"
-              />
-              <span class="flex-1 text-sm">
-                <span class="mr-2">{{ d.category.icon }}</span>
-                {{ d.category.name }}
-              </span>
-              <input
-                v-model.number="d.amount"
-                type="number"
-                min="0"
-                step="50000"
-                :disabled="!d.enabled"
-                :data-testid="`onb-item-amount-${d.category.name}`"
-                class="w-32 rounded border border-line bg-bg px-2 py-1 text-right font-mono text-sm disabled:opacity-40 focus:border-saffron focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <!-- Add an expense the defaults don't cover -->
-          <div
-            class="space-y-2 rounded-card border border-dashed border-line p-3"
-            data-testid="onb-add-expense"
-          >
-            <p class="text-[10px] uppercase tracking-[0.2em] text-muted">Tambah pengeluaran lain</p>
-            <input
-              v-model="newExpName"
-              type="text"
-              placeholder="Nama (mis. Kursus online)"
-              data-testid="onb-add-name"
-              class="w-full rounded border border-line bg-bg px-3 py-2 text-sm focus:border-saffron focus:outline-none"
-            />
-            <div class="flex gap-2">
-              <select
-                v-model="newExpType"
-                data-testid="onb-add-type"
-                class="rounded border border-line bg-bg px-2 py-2 text-sm capitalize focus:border-saffron focus:outline-none"
-              >
-                <option value="fixed">fixed</option>
-                <option value="variable">variable</option>
-                <option value="debt">debt</option>
-                <option value="want">want</option>
-              </select>
-              <input
-                v-model.number="newExpAmount"
-                type="number"
-                min="0"
-                step="50000"
-                placeholder="Jumlah"
-                data-testid="onb-add-amount"
-                class="w-32 flex-1 rounded border border-line bg-bg px-2 py-2 text-right font-mono text-sm focus:border-saffron focus:outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              :disabled="addingExp"
-              data-testid="onb-add-submit"
-              class="w-full rounded-card border border-saffron py-2 text-sm font-semibold text-saffron disabled:opacity-50"
-              @click="addCustomExpense"
-            >
-              {{ addingExp ? 'Menambah…' : '+ Tambah pengeluaran' }}
-            </button>
-            <p v-if="addError" data-testid="onb-add-error" class="text-xs text-fatigued">
-              {{ addError }}
-            </p>
-          </div>
-        </div>
-      </fieldset>
-
-      <!-- Live expenses total vs income — coaching feedback, never blocks submit. -->
-      <div
-        v-if="!loadingCats"
-        class="flex items-center justify-between rounded-card border border-line bg-surface px-4 py-3 text-sm"
-        data-testid="onb-expense-total"
-      >
-        <span class="text-muted">Total pengeluaran</span>
-        <span class="font-mono">{{ formatRp(totalExpenses) }}</span>
+    <!-- ============ STEP 2 — FIXED EXPENSES ============ -->
+    <div v-else-if="step === 2" class="space-y-4" data-testid="onb-step-2">
+      <div class="space-y-2">
+        <span class="inline-block bg-fg px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-bg">Pengeluaran tetap</span>
+        <p class="text-sm text-muted">Yang nggak bisa diubah — sewa, listrik, internet, cicilan.</p>
       </div>
-      <p
-        v-if="overBy > 0"
-        data-testid="onb-overspend"
-        class="flex items-start gap-2 rounded-card border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
+
+      <p v-if="loadingCats" class="font-mono text-sm text-muted">memuat kategori…</p>
+
+      <div v-else class="space-y-2">
+        <div
+          v-for="c in fixedCategories"
+          :key="c.id"
+          class="flex items-center gap-3 rounded-card border-2 border-line bg-surface px-3 py-3 shadow-brutal-sm"
+        >
+          <span class="flex-1 text-sm font-semibold">
+            <span class="mr-2">{{ c.icon }}</span>{{ c.name }}
+          </span>
+          <div class="flex w-40 items-center rounded-card border-2 border-line bg-bg px-2 py-1.5 focus-within:border-saffron">
+            <span class="mr-1 font-mono text-xs font-bold text-saffron">Rp</span>
+            <input
+              :value="fixedAmountDisplay(c.id)"
+              inputmode="numeric"
+              :data-testid="`onb-fixed-amount-${c.name}`"
+              class="w-full bg-transparent text-right font-mono text-sm focus:outline-none"
+              @input="(e) => onFixedAmountInput(c.id, e)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Add a fixed expense the catalog doesn't cover (e.g. cicilan motor). -->
+      <AddCategoryInline
+        v-if="!loadingCats"
+        default-type="fixed"
+        @created="onFixedCategoryCreated"
+      />
+
+      <div
+        class="flex items-center justify-between rounded-card border-2 border-line bg-fg px-4 py-3 text-sm text-bg"
+        data-testid="onb-fixed-total"
       >
-        <span aria-hidden="true">⚠</span>
-        <span>Pengeluaran melebihi pemasukan — lebih {{ formatRp(overBy) }}. Tetap bisa lanjut, nanti kami bantu rapikan.</span>
+        <span class="font-bold uppercase tracking-wider">Total tetap</span>
+        <span class="font-mono">{{ formatRp(fixedTotal) }}</span>
+      </div>
+    </div>
+
+    <!-- ============ STEP 3 — PLAN + PLANNER CHAT ============ -->
+    <div v-else class="space-y-5" data-testid="onb-step-3">
+      <p v-if="suggesting" class="font-mono text-sm text-muted">menyusun rencana…</p>
+      <p v-else-if="suggestError" class="text-sm text-fatigued" data-testid="onb-suggest-error">
+        {{ suggestError }}
       </p>
 
-      <p v-if="submitError" data-testid="onb-error" class="text-sm text-fatigued">
-        {{ submitError }}
-      </p>
+      <template v-else-if="plan">
+        <!-- Top-line numbers -->
+        <div class="space-y-2 rounded-card border-2 border-line bg-surface p-4 shadow-brutal" data-testid="onb-plan-summary">
+          <span class="inline-block bg-fg px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-bg">Rencana</span>
+          <dl class="space-y-1 font-mono text-sm">
+            <div class="flex justify-between">
+              <dt class="text-muted">Pemasukan</dt>
+              <dd>{{ formatRp(income) }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted">Total tetap</dt>
+              <dd>{{ formatRp(fixedTotal) }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted">Dipakai keinginan</dt>
+              <dd>{{ formatRp(flexibleTotal) }}</dd>
+            </div>
+            <div class="flex justify-between border-t-2 border-line pt-1">
+              <dt class="font-bold text-saffron">Target tabungan</dt>
+              <dd
+                :class="residualSavings < 0 ? 'font-bold text-fatigued' : 'font-bold text-saffron'"
+                data-testid="onb-savings-target"
+              >
+                {{ formatRp(residualSavings) }}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Over-budget coaching -->
+        <p
+          v-if="plan.warning"
+          data-testid="onb-warning"
+          class="flex items-start gap-2 rounded-card border-2 border-line bg-warning px-4 py-2 text-sm font-medium text-fg shadow-brutal-sm"
+        >
+          <span aria-hidden="true">⚠</span><span>{{ plan.warning }}</span>
+        </p>
+        <p
+          v-else-if="residualSavings < 0"
+          data-testid="onb-warning"
+          class="flex items-start gap-2 rounded-card border-2 border-line bg-fatigued px-4 py-2 text-sm font-medium text-fg shadow-brutal-sm"
+        >
+          <span aria-hidden="true">⚠</span>
+          <span>Pengeluaran lebih dari pemasukan. Kecilin keinginan atau minta planner bantu rapikan.</span>
+        </p>
+
+        <!-- Suggested flexible categories — inline editable -->
+        <div class="space-y-2" data-testid="onb-flexible">
+          <span class="inline-block bg-fg px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-bg">Keinginan (saran)</span>
+          <p class="text-xs text-muted">Angka saran dari app. Ubah langsung atau ngobrol sama planner di bawah.</p>
+          <div
+            v-for="f in plan.flexible"
+            :key="f.category_id"
+            class="flex items-center gap-3 rounded-card border-2 border-line bg-surface px-3 py-3 shadow-brutal-sm"
+          >
+            <span class="flex-1 text-sm font-semibold">
+              <span class="mr-2">{{ f.icon }}</span>{{ f.name }}
+            </span>
+            <div class="flex w-40 items-center rounded-card border-2 border-line bg-bg px-2 py-1.5 focus-within:border-saffron">
+              <span class="mr-1 font-mono text-xs font-bold text-saffron">Rp</span>
+              <input
+                :value="flexibleAmountDisplay(f.category_id)"
+                inputmode="numeric"
+                :data-testid="`onb-flex-amount-${f.name}`"
+                class="w-full bg-transparent text-right font-mono text-sm focus:outline-none"
+                @input="(e) => onFlexibleAmountInput(f.category_id, e)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Planner chat (multi-turn) -->
+        <PlannerChat :messages="messages" :pending="chatPending" @send="onChatSend" />
+      </template>
+    </div>
+
+    <!-- ============ STEP NAV ============ -->
+    <div class="flex items-center gap-3">
+      <button
+        v-if="step > 1"
+        type="button"
+        data-testid="onb-back"
+        class="border-2 border-line bg-surface px-4 py-3 text-sm font-bold uppercase shadow-brutal active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transform-none"
+        @click="goBack"
+      >
+        ← Kembali
+      </button>
 
       <button
-        type="submit"
-        :disabled="submitting || loadingCats"
-        data-testid="onb-submit"
-        class="w-full rounded-card bg-saffron py-3 font-semibold text-bg disabled:opacity-50"
+        v-if="step < 3"
+        type="button"
+        data-testid="onb-next"
+        :disabled="loadingCats"
+        class="flex-1 rounded-card border-2 border-line bg-saffron py-3 text-sm font-bold uppercase text-fg shadow-brutal active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50 motion-reduce:transform-none"
+        @click="goNext"
       >
-        {{ submitting ? 'Menyusun program…' : 'Mulai program' }}
+        Lanjut →
       </button>
-    </form>
+
+      <button
+        v-else
+        type="button"
+        data-testid="onb-submit"
+        :disabled="submitting || suggesting || !plan"
+        class="flex-1 rounded-card border-2 border-line bg-saffron py-3 text-sm font-bold uppercase text-fg shadow-brutal active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50 motion-reduce:transform-none"
+        @click="onSubmit"
+      >
+        {{ submitting ? 'Menyusun…' : 'Mulai program' }}
+      </button>
+    </div>
+
+    <p v-if="submitError" data-testid="onb-submit-error" class="text-sm text-fatigued">
+      {{ submitError }}
+    </p>
   </section>
 </template>

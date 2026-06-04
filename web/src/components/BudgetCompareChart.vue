@@ -40,31 +40,31 @@ function formatRp(n: number): string {
 
 <template>
   <section class="space-y-3" data-testid="budget-compare-chart">
-    <div class="flex items-baseline justify-between">
-      <p class="text-xs uppercase tracking-wider text-muted">Budget vs realisasi</p>
+    <div class="flex items-baseline justify-between gap-2">
+      <span class="inline-block bg-fg px-2 py-[2px] text-[10px] font-bold uppercase tracking-wider text-bg">Budget vs realisasi</span>
       <!-- Legend -->
-      <div class="flex items-center gap-3 text-[10px] text-muted">
+      <div class="flex items-center gap-2 text-[10px] font-semibold">
         <span class="flex items-center gap-1">
-          <span class="inline-block h-2 w-2 rounded-full bg-fresh" />
+          <span class="inline-block h-2 w-2 border border-line bg-fresh" />
           fresh
         </span>
         <span class="flex items-center gap-1">
-          <span class="inline-block h-2 w-2 rounded-full bg-warning" />
+          <span class="inline-block h-2 w-2 border border-line bg-warning" />
           warning
         </span>
         <span class="flex items-center gap-1">
-          <span class="inline-block h-2 w-2 rounded-full bg-fatigued" />
+          <span class="inline-block h-2 w-2 border border-line bg-fatigued" />
           fatigued
         </span>
       </div>
     </div>
 
     <p class="flex items-center gap-1.5 text-[10px] text-muted">
-      <span class="inline-block h-3 w-[2px] bg-fg/70" />
+      <span class="inline-block h-3 w-[2px] bg-fg" />
       penanda = batas alokasi
     </p>
 
-    <div class="space-y-3 rounded-card border border-line bg-surface p-4">
+    <div class="space-y-3 rounded-card border-2 border-line bg-surface p-4 shadow-brutal">
       <div
         v-for="item in rows"
         :key="item.id"
@@ -81,16 +81,16 @@ function formatRp(n: number): string {
         </div>
 
         <!-- Compare bar: neutral track, status-colored spent fill, allocated marker. -->
-        <div class="relative h-3 w-full overflow-hidden rounded-full bg-bg">
+        <div class="relative h-4 w-full overflow-hidden border-2 border-line bg-bg">
           <div
-            class="compare-fill h-full rounded-full"
+            class="compare-fill h-full"
             :class="fillClass[item.status]"
             :style="{ width: pct(item.spent_amount) + '%' }"
             :data-testid="`compare-fill-${item.category_name}`"
           />
           <!-- Allocated marker overlaid on top of the fill. -->
           <span
-            class="pointer-events-none absolute top-0 h-full w-[2px] bg-fg/70"
+            class="pointer-events-none absolute top-0 h-full w-[2px] bg-fg"
             :style="{ left: pct(item.allocated_amount) + '%' }"
             :data-testid="`compare-marker-${item.category_name}`"
             aria-hidden="true"
