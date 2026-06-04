@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentBudget, NoPlanError, type CurrentBudget, type FatigueStatus } from '@/api/budget'
 import { PROGRAM_LABELS } from '@/api/onboarding'
+import ReduceSuggestions from '@/components/ReduceSuggestions.vue'
+import BudgetCompareChart from '@/components/BudgetCompareChart.vue'
 
 const router = useRouter()
 const budget = ref<CurrentBudget | null>(null)
@@ -122,6 +124,12 @@ onMounted(refresh)
           </div>
         </dl>
       </div>
+
+      <!-- Recommendations — most actionable, near the top -->
+      <ReduceSuggestions :items="budget.items" />
+
+      <!-- Budget vs realisasi graphic -->
+      <BudgetCompareChart :items="budget.items" />
 
       <!-- Items -->
       <div class="space-y-3" data-testid="budget-items">

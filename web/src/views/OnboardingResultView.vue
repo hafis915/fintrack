@@ -31,7 +31,7 @@ const summaryRows = computed(() => {
   >
     <template v-if="plan">
       <header class="space-y-1">
-        <p class="text-xs uppercase tracking-[0.18em] text-muted">Program terpilih</p>
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Rekomendasi program</p>
         <h1 class="font-display text-3xl font-semibold" data-testid="result-program">
           {{ PROGRAM_LABELS[plan.program] }}
         </h1>
@@ -95,14 +95,26 @@ const summaryRows = computed(() => {
         {{ plan.warning }}
       </p>
 
-      <button
-        type="button"
-        class="w-full rounded-card border border-line py-3 text-sm text-muted hover:border-saffron hover:text-saffron"
-        data-testid="result-restart"
-        @click="router.push({ name: 'onboarding' })"
-      >
-        Ubah jawaban
-      </button>
+      <div class="space-y-2">
+        <!-- Primary: finish onboarding and go to the live budget dashboard. -->
+        <button
+          type="button"
+          class="w-full rounded-card bg-saffron py-3 font-semibold text-bg"
+          data-testid="result-continue"
+          @click="router.push({ name: 'budget' })"
+        >
+          Lanjut ke budget
+        </button>
+        <!-- Secondary: tweak the answers (preserved) and regenerate. -->
+        <button
+          type="button"
+          class="w-full rounded-card border border-line py-3 text-sm text-muted hover:border-saffron hover:text-saffron"
+          data-testid="result-restart"
+          @click="router.push({ name: 'onboarding' })"
+        >
+          Ubah jawaban
+        </button>
+      </div>
     </template>
 
     <template v-else>

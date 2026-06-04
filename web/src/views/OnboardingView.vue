@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { listCategories, type Category, type ExpenseType } from '@/api/categories'
+import { createCategory, listCategories, type Category, type ExpenseType } from '@/api/categories'
 import {
   submitOnboarding,
   type DebtType,
@@ -10,7 +10,7 @@ import {
   type LifestyleStyle,
   type OnboardingItem,
 } from '@/api/onboarding'
-import { useOnboardingStore } from '@/stores/onboarding'
+import { useOnboardingStore, type OnboardingAnswers } from '@/stores/onboarding'
 
 interface DraftItem {
   category: Category
@@ -42,22 +42,68 @@ const groupedDrafts = computed(() => {
   return groups
 })
 
+// Live running total of declared expenses, and how far it exceeds income.
+// Surfaced as coaching feedback — overspending is allowed (the result page
+// coaches it), so this never blocks submission.
+const totalExpenses = computed(() =>
+  drafts.value
+    .filter((d) => d.enabled && d.amount > 0)
+    .reduce((sum, d) => sum + (Number(d.amount) || 0), 0),
+)
+const overBy = computed(() => totalExpenses.value - (Number(income.value) || 0))
+
+function formatRp(n: number): string {
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID')
+}
+
 onMounted(async () => {
   try {
     categories.value = await listCategories()
-    drafts.value = categories.value.map((c) => ({
-      category: c,
-      // Pre-fill plausible defaults for the common items so the e2e test
-      // and a real user both have a quick path. Type-specific defaults.
-      amount: defaultAmountFor(c),
-      enabled: defaultEnabledFor(c),
-    }))
+    // Rehydrate the user's previous answers (e.g. after "Ubah jawaban")
+    // instead of resetting to defaults. Scalars first, then per-item state
+    // merged onto the freshly loaded categories by category_id.
+    const saved = store.answers
+    if (saved) {
+      income.value = saved.income
+      housingType.value = saved.housingType
+      goal.value = saved.goal
+      debtTypes.value = [...saved.debtTypes]
+      emergencyMonths.value = saved.emergencyMonths
+      lifestyleStyle.value = saved.lifestyleStyle
+    }
+    drafts.value = categories.value.map((c) => {
+      const savedItem = saved?.items[c.id]
+      return {
+        category: c,
+        // Restore the user's amount/enabled if we have it; otherwise pre-fill
+        // plausible type-specific defaults for a quick first-time path.
+        amount: savedItem ? savedItem.amount : defaultAmountFor(c),
+        enabled: savedItem ? savedItem.enabled : defaultEnabledFor(c),
+      }
+    })
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : String(err)
   } finally {
     loadingCats.value = false
   }
 })
+
+// Snapshot the current form so the result page's "Ubah jawaban" can restore it.
+function snapshotAnswers(): OnboardingAnswers {
+  const items: Record<string, { amount: number; enabled: boolean }> = {}
+  for (const d of drafts.value) {
+    items[d.category.id] = { amount: Number(d.amount) || 0, enabled: d.enabled }
+  }
+  return {
+    income: income.value,
+    housingType: housingType.value,
+    goal: goal.value,
+    debtTypes: [...debtTypes.value],
+    emergencyMonths: emergencyMonths.value,
+    lifestyleStyle: lifestyleStyle.value,
+    items,
+  }
+}
 
 function defaultAmountFor(c: Category): number {
   if (c.name === 'Cicilan KPR') return 1_500_000
@@ -72,6 +118,40 @@ function defaultEnabledFor(c: Category): boolean {
   return ['Cicilan KPR', 'Makan & minum', 'Kartu kredit', 'Hiburan'].includes(c.name)
 }
 
+// --- Add a custom expense the default seed doesn't cover ---
+const newExpName = ref('')
+const newExpType = ref<ExpenseType>('variable')
+const newExpAmount = ref<number>(0)
+const addingExp = ref(false)
+const addError = ref<string | null>(null)
+
+async function addCustomExpense() {
+  addError.value = null
+  const name = newExpName.value.trim()
+  if (!name) {
+    addError.value = 'Isi nama pengeluaran dulu.'
+    return
+  }
+  const amt = Number(newExpAmount.value)
+  if (!Number.isFinite(amt) || amt <= 0) {
+    addError.value = 'Isi jumlah lebih dari 0.'
+    return
+  }
+  addingExp.value = true
+  try {
+    const cat = await createCategory({ name, type: newExpType.value })
+    categories.value.push(cat)
+    drafts.value.push({ category: cat, amount: amt, enabled: true })
+    newExpName.value = ''
+    newExpAmount.value = 0
+    newExpType.value = 'variable'
+  } catch (err) {
+    addError.value = err instanceof Error ? err.message : String(err)
+  } finally {
+    addingExp.value = false
+  }
+}
+
 function toggleDebt(t: DebtType) {
   const i = debtTypes.value.indexOf(t)
   if (i === -1) debtTypes.value.push(t)
@@ -80,6 +160,22 @@ function toggleDebt(t: DebtType) {
 
 async function onSubmit() {
   submitError.value = null
+
+  // Guard income before hitting the API. A cleared number field serializes
+  // as "" and the backend rejects it as invalid_json (bug #3) — catch it
+  // here with a friendly message instead. Number() normalizes NaN/empty.
+  const incomeValue = Number(income.value)
+  if (!Number.isFinite(incomeValue) || incomeValue < 100_000) {
+    income.value = incomeValue
+    submitError.value = 'Isi pemasukan bulanan minimal Rp 100.000.'
+    return
+  }
+  income.value = incomeValue
+
+  // Persist answers up front so "Ubah jawaban" restores them even if the
+  // request fails or the user navigates back without resubmitting.
+  store.setAnswers(snapshotAnswers())
+
   submitting.value = true
   try {
     const expense_items: OnboardingItem[] = drafts.value
@@ -277,8 +373,74 @@ async function onSubmit() {
               />
             </div>
           </div>
+
+          <!-- Add an expense the defaults don't cover -->
+          <div
+            class="space-y-2 rounded-card border border-dashed border-line p-3"
+            data-testid="onb-add-expense"
+          >
+            <p class="text-[10px] uppercase tracking-[0.2em] text-muted">Tambah pengeluaran lain</p>
+            <input
+              v-model="newExpName"
+              type="text"
+              placeholder="Nama (mis. Kursus online)"
+              data-testid="onb-add-name"
+              class="w-full rounded border border-line bg-bg px-3 py-2 text-sm focus:border-saffron focus:outline-none"
+            />
+            <div class="flex gap-2">
+              <select
+                v-model="newExpType"
+                data-testid="onb-add-type"
+                class="rounded border border-line bg-bg px-2 py-2 text-sm capitalize focus:border-saffron focus:outline-none"
+              >
+                <option value="fixed">fixed</option>
+                <option value="variable">variable</option>
+                <option value="debt">debt</option>
+                <option value="want">want</option>
+              </select>
+              <input
+                v-model.number="newExpAmount"
+                type="number"
+                min="0"
+                step="50000"
+                placeholder="Jumlah"
+                data-testid="onb-add-amount"
+                class="w-32 flex-1 rounded border border-line bg-bg px-2 py-2 text-right font-mono text-sm focus:border-saffron focus:outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              :disabled="addingExp"
+              data-testid="onb-add-submit"
+              class="w-full rounded-card border border-saffron py-2 text-sm font-semibold text-saffron disabled:opacity-50"
+              @click="addCustomExpense"
+            >
+              {{ addingExp ? 'Menambah…' : '+ Tambah pengeluaran' }}
+            </button>
+            <p v-if="addError" data-testid="onb-add-error" class="text-xs text-fatigued">
+              {{ addError }}
+            </p>
+          </div>
         </div>
       </fieldset>
+
+      <!-- Live expenses total vs income — coaching feedback, never blocks submit. -->
+      <div
+        v-if="!loadingCats"
+        class="flex items-center justify-between rounded-card border border-line bg-surface px-4 py-3 text-sm"
+        data-testid="onb-expense-total"
+      >
+        <span class="text-muted">Total pengeluaran</span>
+        <span class="font-mono">{{ formatRp(totalExpenses) }}</span>
+      </div>
+      <p
+        v-if="overBy > 0"
+        data-testid="onb-overspend"
+        class="flex items-start gap-2 rounded-card border border-warning/40 bg-warning/10 px-4 py-2 text-sm text-warning"
+      >
+        <span aria-hidden="true">⚠</span>
+        <span>Pengeluaran melebihi pemasukan — lebih {{ formatRp(overBy) }}. Tetap bisa lanjut, nanti kami bantu rapikan.</span>
+      </p>
 
       <p v-if="submitError" data-testid="onb-error" class="text-sm text-fatigued">
         {{ submitError }}

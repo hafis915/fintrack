@@ -13,6 +13,8 @@ export interface Transaction {
   transacted_at: string
   budget_plan_id?: string
   ai_categorized: boolean
+  merchant?: string
+  receipt_url?: string
   created_at: string
   updated_at: string
 }
