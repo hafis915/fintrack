@@ -166,7 +166,7 @@ This project exists to **teach Hafis the vibe coding skill** — how to plan, or
 
 1. **Manual dependency injection.** Wire from `main.go` downward. Domain exposes interfaces only. **No Wire / Fx.**
 2. **Explicit SQL, never ORM.** Financial accuracy requires hand-written queries. Use sqlc.
-3. **Database is source of truth.** RLS enforces user isolation at DB layer, not app layer.
+3. **User isolation is app-layer and TESTED (RLS is not a backstop yet).** Every query filters `user_id` (the `...ForUser` sqlc naming convention); `test/integration/isolation_integration_test.go` proves user B cannot read/edit/delete user A's rows. ⚠️ RLS is `ENABLE`d on every table but has **no policies** and the app connects as the table owner, so RLS is currently a **no-op** — it is NOT the isolation guarantee. Real policy-backed RLS (policies + `FORCE ROW LEVEL SECURITY` + a non-owner role that `SET LOCAL app.user_id`) is a deferred pre-launch hardening (see CSO audit 2026-06-05 / `PLAN.md`). Until then, **any new query MUST scope by `user_id`**, and any new by-id route MUST be covered by the isolation test.
 4. **Repository pattern.** Handlers never touch sqlc directly — go through `internal/repository/`.
 5. **Domain layer is pure Go.** No HTTP, no DB, no Echo. Just business logic + interfaces.
 6. **Errors are values.** Use sentinel errors + `errors.Is` / `errors.As`. No panics in normal flow.
@@ -248,12 +248,12 @@ fintrack/
 ## Database Conventions
 
 - **All primary keys:** UUID v4 (`uuid_generate_v4()`)
-- **All tables:** `user_id` column + RLS policy (except system tables like `expense_categories` defaults)
+- **All tables:** `user_id` column, and every query MUST filter on it (system tables like `expense_categories` defaults use `user_id is null`)
 - **Money:** Stored as `BIGINT` (Rupiah, no decimals). Never `FLOAT` / `DECIMAL` for currency.
 - **Timestamps:** `TIMESTAMPTZ` always. Use `now()` default.
 - **Soft delete:** Only where needed (transactions yes, categories no).
 - **Indexes:** Add explicitly per query pattern. Document in migration comment.
-- **RLS:** Policy per table. Test with `SET ROLE` queries.
+- **RLS:** Enabled on every table but currently un-policied (a no-op behind the owner connection) — NOT a backstop today. Isolation is app-layer + covered by `isolation_integration_test.go`. Adding real policies (+ `FORCE` + non-owner role + `SET LOCAL app.user_id`) is a deferred pre-launch gate.
 
 ---
 
@@ -261,7 +261,7 @@ fintrack/
 
 - **Income encryption:** AES-256-GCM **before** DB insert. Plaintext **never** returned in API responses. UI shows hints only (e.g., "Rp 8jt").
 - **JWT:** Validate on every request (except `/health`). Extract `user_id` from claim, put in request context.
-- **RLS enforcement:** Even with bugs in app code, DB blocks cross-user data access.
+- **User isolation (app-layer, tested):** every query scopes by `user_id`; a cross-user isolation integration test is the regression guard. RLS is enabled but un-policied (owner connection bypasses it), so it does **not** currently block cross-user access at the DB — do not rely on it as a backstop. Policy-backed RLS is a deferred pre-launch gate.
 - **API tokens (v2):** Bcrypt hashed. Plaintext shown once at creation, never again.
 - **Image upload:** Max 2MB. Content-type validation. Stored at `receipts/{user_id}/{txn_id}.jpg`.
 - **Signed URLs:** 15-min TTL when serving images.
@@ -274,7 +274,7 @@ fintrack/
 - ❌ Use GORM or any ORM
 - ❌ Hand-edit `database/sqlc/generated/` files
 - ❌ Store money as float
-- ❌ Skip RLS policies
+- ❌ Write a query (or by-id route) that doesn't filter `user_id` — app-layer scoping is the ONLY isolation control today (RLS is a no-op); cover new by-id routes with the isolation test
 - ❌ Return raw income in API responses
 - ❌ Use `panic` for expected error paths
 - ❌ Add Redis "for caching" — not needed at solo-user scale

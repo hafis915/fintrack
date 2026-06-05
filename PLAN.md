@@ -141,6 +141,7 @@ Recorded so they aren't forgotten. None are exploitable on the current local sin
 - **[P2] Receipt serving via signed URLs.** `receipt_url` is stored as a plain object URL; CLAUDE.md mandates 15-min signed URLs when serving. `storage.SignedURL` exists but isn't wired — there's no receipt-viewing UI yet (deferred MVP feature), so no serve path exists. Wire it when that UI is built.
 - **[P2] Custom-category uniqueness.** `POST /v1/categories` has no per-user `(user_id, lower(name))` uniqueness, so a user can create duplicate custom categories. Add a constraint + 409 mapping.
 - **[P2] JWT `iss` not verified** by the middleware (any valid-signature token passes). Harmless with one local secret; add `jwt.WithIssuer` when Supabase shares/rotates secrets in v2.
+- **[P1] Policy-backed RLS** (CSO audit 2026-06-05). Every table has `ENABLE ROW LEVEL SECURITY` but **no policies**, and the app connects as the table owner — so RLS is a **no-op**, not the isolation backstop CLAUDE.md used to claim. Isolation is currently app-layer only (every query filters `user_id`) and is now regression-guarded by `test/integration/isolation_integration_test.go`. Before public/multi-user launch, add real per-table policies + `FORCE ROW LEVEL SECURITY` + a non-owner DB role that `SET LOCAL app.user_id` per request, OR keep app-layer-only and expand the isolation test to every by-id route. CLAUDE.md updated to stop over-claiming DB-layer isolation.
 
 ## Done (earlier batches, 2026-06-03 → 04)
 - All 4 MVP features (onboarding, transactions CRUD, receipt scan, fatigue dashboard).

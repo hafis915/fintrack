@@ -69,3 +69,6 @@ web/playwright/.cache/
 
 # compiled mint-jwt helper binary (build artifact)
 /mint-jwt
+
+# gstack local artifacts (security reports, etc.)
+.gstack/
