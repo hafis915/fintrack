@@ -2,6 +2,7 @@ package budget
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/google/uuid"
 )
@@ -270,29 +271,7 @@ func splitDiscretionary(total int64, flexibleCats []IntakeItem, answers IntakeAn
 		totalWeight += w
 	}
 
-	amounts := make([]int64, len(flexibleCats))
-	var assigned int64
-	largest := 0
-	for i, c := range flexibleCats {
-		var amt int64
-		if totalWeight > 0 {
-			amt = roundTo(int64(float64(total)*weights[i]/totalWeight), roundStep)
-		}
-		amounts[i] = amt
-		assigned += amt
-		if amounts[i] > amounts[largest] {
-			largest = i
-		}
-		_ = c
-	}
-
-	// Reconcile rounding drift on the largest category so parts sum to total
-	// exactly. Never let it go negative.
-	drift := total - assigned
-	amounts[largest] += drift
-	if amounts[largest] < 0 {
-		amounts[largest] = 0
-	}
+	amounts := apportion(total, weights, roundStep)
 
 	for i, c := range flexibleCats {
 		out = append(out, PlanItem{
@@ -303,6 +282,92 @@ func splitDiscretionary(total int64, flexibleCats []IntakeItem, answers IntakeAn
 			AllocatedAmount: amounts[i],
 			Percentage:      pct(amounts[i], answers.Income),
 		})
+	}
+	return out
+}
+
+// apportion divides total across the given weights using the largest-remainder
+// (Hamilton) method, in whole units of `step` where possible. It GUARANTEES two
+// invariants that the old round-each-then-dump-drift-on-largest approach did not:
+//
+//   - Conservation: sum(result) == total exactly (no money created or lost).
+//   - Non-negativity: every part is >= 0.
+//
+// The previous code rounded each share to the nearest step then added the whole
+// drift to one category, clamping at 0 — so when many small same-weight shares
+// each rounded UP, the negative drift overflowed that clamp and the parts summed
+// to MORE than total (an over-income suggested budget). Hamilton avoids that by
+// flooring to step then handing the leftover whole steps to the largest
+// fractional remainders, with any sub-step remainder landing on the top one.
+// Deterministic: ties break by index, so the result never depends on map order.
+func apportion(total int64, weights []float64, step int64) []int64 {
+	n := len(weights)
+	out := make([]int64, n)
+	if n == 0 || total <= 0 {
+		return out
+	}
+	if step < 1 {
+		step = 1
+	}
+
+	var totalWeight float64
+	for _, w := range weights {
+		if w > 0 {
+			totalWeight += w
+		}
+	}
+
+	// No usable weights → split as evenly as possible (still conserves exactly).
+	if totalWeight <= 0 {
+		base := total / int64(n)
+		rem := total - base*int64(n)
+		for i := range out {
+			out[i] = base
+			if int64(i) < rem {
+				out[i]++
+			}
+		}
+		return out
+	}
+
+	// Work in whole steps; the sub-step remainder (when total isn't a multiple of
+	// step) is handed to the top-remainder category at the end.
+	units := total / step
+	subStep := total - units*step
+
+	type frac struct {
+		idx int
+		rem float64
+	}
+	fracs := make([]frac, n)
+	var assigned int64
+	for i, w := range weights {
+		ideal := 0.0
+		if w > 0 {
+			ideal = float64(units) * w / totalWeight
+		}
+		fl := int64(ideal) // floor; ideal >= 0
+		out[i] = fl
+		assigned += fl
+		fracs[i] = frac{idx: i, rem: ideal - float64(fl)}
+	}
+
+	// Hand out the remaining whole steps (leftover < n) to the largest remainders.
+	sort.SliceStable(fracs, func(a, b int) bool {
+		if fracs[a].rem != fracs[b].rem {
+			return fracs[a].rem > fracs[b].rem
+		}
+		return fracs[a].idx < fracs[b].idx
+	})
+	for k := int64(0); k < units-assigned; k++ {
+		out[fracs[k].idx]++
+	}
+
+	for i := range out {
+		out[i] *= step
+	}
+	if subStep > 0 {
+		out[fracs[0].idx] += subStep
 	}
 	return out
 }

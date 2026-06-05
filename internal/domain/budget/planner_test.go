@@ -258,3 +258,73 @@ func TestRebalance_TouchesSavingsWhenAllowed(t *testing.T) {
 		t.Errorf("savings: want %d, got %d", savings-700_000, newSavings)
 	}
 }
+
+// Regression: apportion must conserve (sum == total) and never go negative.
+// The old splitDiscretionary rounded each share to a step then dumped the whole
+// drift on one category and clamped at 0 — so a small pool spread over many
+// same-weight categories that each rounded UP produced parts summing to MORE
+// than the pool (money created, an over-income suggested budget). The repro is
+// the first case below: 40_000 across 7 equal weights at a 10_000 step.
+func TestApportionConservesAndNonNegative(t *testing.T) {
+	cases := []struct {
+		name    string
+		total   int64
+		weights []float64
+		step    int64
+	}{
+		{"tiny pool, 7 equal weights (the bug repro)", 40_000, []float64{1, 1, 1, 1, 1, 1, 1}, 10_000},
+		{"uneven weights", 1_000_000, []float64{2, 1.5, 1, 0.8}, 10_000},
+		{"total not a multiple of step", 43_333, []float64{1, 1, 1}, 10_000},
+		{"total smaller than one step", 5_000, []float64{1, 1, 1, 1, 1}, 10_000},
+		{"zero total", 0, []float64{1, 1}, 10_000},
+		{"all-zero weights fall back to even split", 100_000, []float64{0, 0, 0}, 10_000},
+		{"single category", 37_000, []float64{1}, 10_000},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := apportion(tc.total, tc.weights, tc.step)
+			if len(got) != len(tc.weights) {
+				t.Fatalf("len: want %d, got %d", len(tc.weights), len(got))
+			}
+			var sum int64
+			for i, v := range got {
+				if v < 0 {
+					t.Errorf("part[%d] negative: %d", i, v)
+				}
+				sum += v
+			}
+			if sum != tc.total {
+				t.Errorf("sum %d != total %d (money created/lost)", sum, tc.total)
+			}
+		})
+	}
+}
+
+// End-to-end guard for the same bug: an income barely above fixed expenses
+// yields a tiny discretionary pool. The suggested flexible amounts must still
+// sum exactly to that pool and keep the whole plan within income.
+func TestSuggestFlexible_TinyDiscretionaryStaysWithinIncome(t *testing.T) {
+	a := IntakeAnswers{
+		Income: 2_300_000, HousingType: HousingKosan, Goal: GoalBalance,
+		DebtTypes: []DebtType{DebtNone}, EmergencyMonths: 1, LifestyleStyle: LifestyleBalanced,
+	}
+	fixed := []IntakeItem{
+		{CategoryID: uuid.New(), Name: "Sewa kosan", Type: ExpenseFixed, Amount: 1_700_000},
+	}
+	sug, err := SuggestFlexible(a, fixed, defaultFlexCats())
+	if err != nil {
+		t.Fatalf("SuggestFlexible: %v", err)
+	}
+	gotSum := sumFlexible(sug.Flexible)
+	if gotSum != sug.Discretionary {
+		t.Errorf("flexible sum %d != discretionary %d", gotSum, sug.Discretionary)
+	}
+	if total := sug.FixedTotal + gotSum + sug.SavingsTarget; total > a.Income {
+		t.Errorf("plan exceeds income: total %d > income %d", total, a.Income)
+	}
+	for _, it := range sug.Flexible {
+		if it.AllocatedAmount < 0 {
+			t.Errorf("category %q negative: %d", it.CategoryName, it.AllocatedAmount)
+		}
+	}
+}
