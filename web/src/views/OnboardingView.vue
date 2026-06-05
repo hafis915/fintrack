@@ -257,7 +257,9 @@ async function onChatSend(text: string) {
         name: f.name,
         amount: Number(flexibleAmounts.value[f.category_id]) || 0,
       })),
-      messages: messages.value,
+      // Prior turns only — `text` is sent separately as user_message, so slice
+      // off the turn we just pushed to avoid the model seeing it twice.
+      messages: messages.value.slice(0, -1),
       user_message: text,
     })
     messages.value.push({ role: 'assistant', content: res.reply })

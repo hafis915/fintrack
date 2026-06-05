@@ -238,6 +238,17 @@ func (h *Planner) Chat(c echo.Context) error {
 	if strings.TrimSpace(req.UserMessage) == "" {
 		return responses.Err(c, http.StatusBadRequest, "invalid_payload", "user_message is required")
 	}
+	// The client owns the working set, but reject negative money outright so a bad
+	// payload returns a clean 400 instead of feeding nonsensical numbers into
+	// Rebalance. (No persistence happens here, so this only protects the caller.)
+	if req.SavingsTarget < 0 {
+		return responses.Err(c, http.StatusBadRequest, "invalid_payload", "savings_target cannot be negative")
+	}
+	for _, f := range req.Flexible {
+		if f.Amount < 0 {
+			return responses.Err(c, http.StatusBadRequest, "invalid_payload", "flexible[].amount cannot be negative")
+		}
+	}
 
 	// Build the live flexible working set the rebalancer mutates. Names are kept
 	// so we can resolve the model's category_name (which is text, not an ID) back

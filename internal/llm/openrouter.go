@@ -78,7 +78,10 @@ func (c *openRouterClient) Complete(ctx context.Context, system string, messages
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	// Cap the response read so a buggy or hostile upstream can't stream an
+	// arbitrarily large body and exhaust memory. A chat-completions reply is a
+	// few KB; 1MB is generous headroom.
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return "", fmt.Errorf("reading response: %w: %w", err, ErrLLMFailed)
 	}
