@@ -32,11 +32,15 @@ import (
 
 func resetOnboardingTables(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	// Order matters: items → plans → user_profiles → custom categories → users.
+	// Order matters: child rows that FK to expense_categories (budget_items,
+	// transactions) must be cleared before the custom categories, which in turn
+	// come before users. A leftover transaction against a custom category would
+	// otherwise block `delete from expense_categories`.
 	stmts := []string{
 		`delete from budget_items`,
 		`delete from budget_plans`,
 		`delete from user_profiles`,
+		`delete from transactions`,
 		`delete from expense_categories where user_id is not null`,
 		`delete from users`,
 	}

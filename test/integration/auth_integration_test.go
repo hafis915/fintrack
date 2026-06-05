@@ -25,14 +25,17 @@ import (
 
 func resetUsers(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	// budget/profile tables FK to users — clear them first so `delete from users`
-	// doesn't trip a foreign-key constraint.
+	// Child rows FK to users AND to expense_categories — clear them before the
+	// custom categories and the users themselves, or the deletes trip a foreign
+	// key. transactions/budget_items reference expense_categories, so they MUST
+	// come before `delete from expense_categories` (a transaction logged against
+	// a custom category would otherwise block it — see the inline-category flow).
 	stmts := []string{
 		`delete from budget_items`,
 		`delete from budget_plans`,
 		`delete from user_profiles`,
-		`delete from expense_categories where user_id is not null`,
 		`delete from transactions`,
+		`delete from expense_categories where user_id is not null`,
 		`delete from users`,
 	}
 	for _, s := range stmts {
